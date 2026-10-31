@@ -50,6 +50,36 @@ def initialize_database():
                 PRIMARY KEY (user_id, friend_id),
                 CHECK (user_id != friend_id)
             );
+            CREATE TABLE IF NOT EXISTS chat_threads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_a_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                user_b_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at INTEGER NOT NULL,
+                UNIQUE (user_a_id, user_b_id),
+                CHECK (user_a_id < user_b_id)
+            );
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thread_id INTEGER NOT NULL REFERENCES chat_threads(id) ON DELETE CASCADE,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                body TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS chat_threads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_a_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                user_b_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at INTEGER NOT NULL,
+                UNIQUE (user_a_id, user_b_id),
+                CHECK (user_a_id < user_b_id)
+            );
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                thread_id INTEGER NOT NULL REFERENCES chat_threads(id) ON DELETE CASCADE,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                body TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS rooms (
                 id TEXT PRIMARY KEY,
                 owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -67,6 +97,8 @@ def initialize_database():
             );
             CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
             CREATE INDEX IF NOT EXISTS idx_room_members_user ON room_members(user_id);
+            CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON chat_messages(thread_id, id);
+            CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON chat_messages(thread_id, id);
             """
         )
         user_columns = {row["name"] for row in db.execute("PRAGMA table_info(users)")}
@@ -128,6 +160,62 @@ class AppHandler(SimpleHTTPRequestHandler):
             self.send_json(401, {"error": "login_required"})
         return user
 
+    def find_friend_for_chat(self, db, current_user_id, username):
+        return db.execute(
+            "SELECT users.id, users.username FROM users WHERE users.username = ? COLLATE NOCASE "
+            "AND users.id != ? AND EXISTS (SELECT 1 FROM friends WHERE "
+            "(friends.user_id = ? AND friends.friend_id = users.id) OR "
+            "(friends.friend_id = ? AND friends.user_id = users.id))",
+            (username, current_user_id, current_user_id, current_user_id),
+        ).fetchone()
+
+    def get_chat_thread(self, db, first_user_id, second_user_id):
+        user_a_id, user_b_id = sorted((first_user_id, second_user_id))
+        db.execute(
+            "INSERT OR IGNORE INTO chat_threads (user_a_id, user_b_id, created_at) VALUES (?, ?, ?)",
+            (user_a_id, user_b_id, int(time.time())),
+        )
+        return db.execute(
+            "SELECT id FROM chat_threads WHERE user_a_id = ? AND user_b_id = ?",
+            (user_a_id, user_b_id),
+        ).fetchone()
+
+    def chat_message_history(self, db, thread_id):
+        rows = db.execute(
+            "SELECT chat_messages.id, chat_messages.body, chat_messages.created_at, users.username AS sender "
+            "FROM chat_messages JOIN users ON users.id = chat_messages.sender_id "
+            "WHERE chat_messages.thread_id = ? ORDER BY chat_messages.id DESC LIMIT 200",
+            (thread_id,),
+        ).fetchall()
+        return [dict(row) for row in reversed(rows)]
+
+    def get_friend_for_chat(self, db, current_user, username):
+        return db.execute(
+            "SELECT users.id, users.username FROM friends JOIN users ON users.id = friends.friend_id "
+            "WHERE friends.user_id = ? AND users.username = ? COLLATE NOCASE",
+            (current_user["id"], username),
+        ).fetchone()
+
+    def get_chat_thread(self, db, first_user_id, second_user_id):
+        user_a_id, user_b_id = sorted((first_user_id, second_user_id))
+        db.execute(
+            "INSERT OR IGNORE INTO chat_threads (user_a_id, user_b_id, created_at) VALUES (?, ?, ?)",
+            (user_a_id, user_b_id, int(time.time())),
+        )
+        return db.execute(
+            "SELECT id FROM chat_threads WHERE user_a_id = ? AND user_b_id = ?",
+            (user_a_id, user_b_id),
+        ).fetchone()
+
+    def serialize_chat_messages(self, db, thread_id):
+        rows = db.execute(
+            "SELECT chat_messages.id, chat_messages.body, chat_messages.created_at, users.username AS sender "
+            "FROM chat_messages JOIN users ON users.id = chat_messages.sender_id "
+            "WHERE chat_messages.thread_id = ? ORDER BY chat_messages.id DESC LIMIT 200",
+            (thread_id,),
+        ).fetchall()
+        return [dict(row) for row in reversed(rows)]
+
     def do_GET(self):
         path = urlparse(self.path)
         if not path.path.startswith("/api/"):
@@ -164,11 +252,26 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return self.send_json(200, {"users": [dict(row) for row in matches]})
             if path.path == "/api/friends":
                 rows = db.execute(
-                    "SELECT users.id, users.username FROM friends JOIN users ON users.id = friends.friend_id "
-                    "WHERE friends.user_id = ? ORDER BY users.username",
-                    (user["id"],),
+                    "SELECT users.id, users.username FROM users WHERE users.id != ? AND EXISTS ("
+                    "SELECT 1 FROM friends WHERE (friends.user_id = ? AND friends.friend_id = users.id) "
+                    "OR (friends.friend_id = ? AND friends.user_id = users.id)) ORDER BY users.username",
+                    (user["id"], user["id"], user["id"]),
                 ).fetchall()
                 return self.send_json(200, {"friends": [dict(row) for row in rows]})
+            chat_match = re.fullmatch(r"/api/chats/([A-Za-z0-9_]{3,24})", path.path)
+            if chat_match:
+                friend = self.find_friend_for_chat(db, user["id"], chat_match.group(1))
+                if not friend:
+                    return self.send_json(403, {"error": "friend_required"})
+                thread = self.get_chat_thread(db, user["id"], friend["id"])
+                return self.send_json(200, {"friend": dict(friend), "messages": self.chat_message_history(db, thread["id"])})
+            chat_match = re.fullmatch(r"/api/chats/([A-Za-z0-9_]{3,24})", path.path)
+            if chat_match:
+                friend = self.get_friend_for_chat(db, user, chat_match.group(1))
+                if not friend:
+                    return self.send_json(403, {"error": "friend_required"})
+                thread = self.get_chat_thread(db, user["id"], friend["id"])
+                return self.send_json(200, {"friend": dict(friend), "messages": self.serialize_chat_messages(db, thread["id"])})
             if path.path == "/api/rooms":
                 room_rows = db.execute(
                     "SELECT DISTINCT rooms.id, rooms.name, rooms.start_date, rooms.end_date, users.username AS owner "
@@ -247,8 +350,39 @@ class AppHandler(SimpleHTTPRequestHandler):
                     return self.send_json(404, {"error": "user_not_found"})
                 if friend["id"] == user["id"]:
                     return self.send_json(400, {"error": "cannot_add_self"})
-                db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id, created_at) VALUES (?, ?, ?)", (user["id"], friend["id"], int(time.time())))
+                created_at = int(time.time())
+                db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id, created_at) VALUES (?, ?, ?)", (user["id"], friend["id"], created_at))
+                db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id, created_at) VALUES (?, ?, ?)", (friend["id"], user["id"], created_at))
                 return self.send_json(200, dict(friend))
+            chat_match = re.fullmatch(r"/api/chats/([A-Za-z0-9_]{3,24})", path)
+            if chat_match:
+                friend = self.find_friend_for_chat(db, user["id"], chat_match.group(1))
+                if not friend:
+                    return self.send_json(403, {"error": "friend_required"})
+                body = payload.get("body", "")
+                if not isinstance(body, str) or not body.strip() or len(body) > 2000:
+                    return self.send_json(400, {"error": "invalid_message"})
+                thread = self.get_chat_thread(db, user["id"], friend["id"])
+                created_at = int(time.time())
+                cursor = db.execute(
+                    "INSERT INTO chat_messages (thread_id, sender_id, body, created_at) VALUES (?, ?, ?, ?)",
+                    (thread["id"], user["id"], body.strip(), created_at),
+                )
+                return self.send_json(201, {"id": cursor.lastrowid, "sender": user["username"], "body": body.strip(), "created_at": created_at})
+            chat_match = re.fullmatch(r"/api/chats/([A-Za-z0-9_]{3,24})", path)
+            if chat_match:
+                friend = self.get_friend_for_chat(db, user, chat_match.group(1))
+                if not friend:
+                    return self.send_json(403, {"error": "friend_required"})
+                body = payload.get("body", "")
+                if not isinstance(body, str) or not body.strip() or len(body) > 2000:
+                    return self.send_json(400, {"error": "invalid_message"})
+                thread = self.get_chat_thread(db, user["id"], friend["id"])
+                cursor = db.execute(
+                    "INSERT INTO chat_messages (thread_id, sender_id, body, created_at) VALUES (?, ?, ?, ?)",
+                    (thread["id"], user["id"], body.strip(), int(time.time())),
+                )
+                return self.send_json(201, {"id": cursor.lastrowid, "sender": user["username"], "body": body.strip(), "created_at": int(time.time())})
             if path == "/api/rooms":
                 room_id = str(payload.get("id", ""))
                 name = str(payload.get("name", "")).strip()
@@ -326,7 +460,7 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return
             friend = db.execute("SELECT id FROM users WHERE username = ? COLLATE NOCASE", (str(payload.get("username", "")),)).fetchone()
             if friend:
-                db.execute("DELETE FROM friends WHERE user_id = ? AND friend_id = ?", (user["id"], friend["id"]))
+                db.execute("DELETE FROM friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", (user["id"], friend["id"], friend["id"], user["id"]))
         self.send_json(200, {"ok": True})
 
     def do_PATCH(self):

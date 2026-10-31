@@ -28,6 +28,8 @@
     .belongings-layout{grid-template-columns:minmax(240px,330px) minmax(0,1fr)}.belonging-list{display:grid;gap:9px}.belonging-row{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--line);border-radius:7px;background:#fffefa}.belonging-toggle{display:flex;align-items:center;gap:11px;flex:1;min-width:0;border:0;background:transparent;text-align:left;color:var(--ink);padding:4px}.belonging-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:50%;background:#e8eee6;color:var(--green)}.belonging-icon svg{width:18px}.belonging-name{font-size:14px;font-weight:700;overflow-wrap:anywhere}.belonging-state{font-size:10px;color:#718078;margin-top:3px}.belonging-row.speaking{border-color:#77a28e;background:#f1f7f1}.belonging-row.speaking .belonging-icon{background:var(--green);color:white}.belonging-delete{flex:none;width:34px;height:34px;border:0;border-radius:5px;background:transparent;color:#89938c;font-size:18px}.belonging-delete:hover{background:#f8e9e4;color:#ad5038}.belonging-empty{padding:30px 12px;text-align:center;border:1px dashed #cbd0c8;border-radius:7px;color:#89938c;font-size:12px}
     @media(max-width:760px){.belongings-layout{grid-template-columns:minmax(0,1fr)}}
     .belonging-select{width:18px;height:18px;flex:none;accent-color:var(--green)}.belonging-content{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left;color:var(--ink)}.belonging-list{margin-top:12px}.belonging-play{margin:0 0 4px}.belonging-play:disabled{opacity:.5;cursor:default}
+    .chat-layout{display:grid;grid-template-columns:minmax(210px,280px) minmax(0,1fr);gap:18px;align-items:stretch}.chat-layout .panel{min-width:0}.chat-friend-list{display:grid;gap:6px}.chat-friend{width:100%;display:flex;align-items:center;gap:10px;padding:10px;border:0;border-radius:6px;background:transparent;text-align:left;color:var(--ink)}.chat-friend:hover{background:#f1f3ed}.chat-friend.active{background:#e8eee6;color:var(--green);font-weight:700}.chat-friend .avatar{width:32px;height:32px}.chat-panel{display:flex;flex-direction:column;min-height:500px}.chat-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:13px;border-bottom:1px solid var(--line)}.chat-header h2{margin:0;font-family:'Noto Serif JP',serif;font-size:17px;font-weight:600}.chat-header span{font-size:10px;color:#859087}.chat-messages{display:flex;flex:1;flex-direction:column;gap:10px;min-height:300px;max-height:58vh;overflow-y:auto;padding:16px 3px}.chat-empty{margin:auto;text-align:center;color:#8b958e;font-size:12px}.chat-message{max-width:min(78%,520px);padding:10px 12px;border-radius:8px;background:#edf0e9;align-self:flex-start;overflow-wrap:anywhere;white-space:pre-wrap}.chat-message.mine{align-self:flex-end;background:#315d50;color:white}.chat-message-meta{display:block;margin-top:5px;font-size:9px;opacity:.72}.chat-composer{display:flex;align-items:flex-end;gap:9px;padding-top:12px;border-top:1px solid var(--line)}.chat-composer textarea{flex:1;min-width:0;min-height:44px;max-height:120px;resize:vertical;border:1px solid #d9ddd5;border-radius:6px;padding:10px 11px;background:white;color:var(--ink)}.chat-composer button{min-height:40px}.chat-empty-inline{padding:20px 10px;text-align:center;color:#8b958e;font-size:12px}
+    @media(max-width:760px){.chat-layout{grid-template-columns:minmax(0,1fr);gap:12px}.chat-panel{min-height:440px}.chat-friend-list{display:flex;overflow-x:auto}.chat-friend{width:auto;min-width:max-content}.chat-messages{max-height:48vh}}
   </style>
 </head>
 <body>
@@ -45,7 +47,7 @@
       <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>お知らせ</div>
       <div class="session-tools"><span id="signed-in-user"></span><button type="button" id="logout-button">ログアウト</button><div class="top-date" id="today"></div></div>
     </header>
-    <nav class="main-nav" aria-label="メインメニュー"><button class="active" data-page="schedule">予定カレンダー</button><button data-page="belongings">持ち物</button><button data-page="friends">フレンド</button><button data-page="rooms">ルーム</button></nav>
+    <nav class="main-nav" aria-label="メインメニュー"><button class="active" data-page="schedule">予定カレンダー</button><button data-page="belongings">持ち物</button><button data-page="friends">フレンド</button><button data-page="chat">チャット</button><button data-page="rooms">ルーム</button></nav>
     <section class="app-view" id="page-schedule">
     <section class="intro">
       <div><div class="eyebrow">A LITTLE NUDGE, RIGHT ON TIME</div><h1>忘れたくないことに、<br>ちょうどいい合図を。</h1><p>日時を決めるだけ。あとはこのアプリが覚えておきます。</p></div>
@@ -91,6 +93,14 @@
       </div>
       <p class="demo-notice">このアプリのサーバーに登録済みのユーザーを検索します。アカウントとフレンド情報はユーザーごとに保存されます。</p>
     </section>
+    <section class="app-view" id="page-chat" hidden>
+      <div class="view-intro"><div class="eyebrow">DIRECT MESSAGES</div><h1>チャット</h1><p>登録したフレンドと個別にメッセージをやりとりできます。</p></div>
+      <div class="chat-layout">
+        <section class="panel chat-friends-panel"><h2>フレンド</h2><div class="chat-friend-list" id="chat-friend-list"></div></section>
+        <section class="panel chat-panel"><div class="chat-header"><h2 id="chat-title">フレンドを選択</h2><span id="chat-status"></span></div><div class="chat-messages" id="chat-messages" aria-live="polite"><div class="chat-empty">左の一覧からフレンドを選ぶと、会話を表示します。</div></div><form class="chat-composer" id="chat-form"><textarea id="chat-input" maxlength="2000" placeholder="メッセージを書く" aria-label="メッセージ" disabled required></textarea><button class="small-action" id="chat-send" type="submit" disabled>送信</button></form></section>
+      </div>
+      <p class="demo-notice">メッセージはサーバーに保存され、会話相手と共有されます。数秒ごとに新着メッセージを確認します。</p>
+    </section>
     <section class="app-view" id="page-rooms" hidden>
       <div class="view-intro"><div class="eyebrow">PLANS TOGETHER</div><h1>ルーム</h1><p>共有するフレンドと期間を決めて、予定をひとつの場所にまとめます。</p></div>
       <div class="social-layout">
@@ -123,6 +133,11 @@
     let speechQueueIndex = 0;
     let currentUser = null;
     let saveQueue = Promise.resolve();
+    let activeChatUsername = null;
+    let chatMessages = [];
+    let chatPollTimer = null;
+    let chatRequestVersion = 0;
+    let chatLoading = false;
     function createId() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
     async function api(path, options = {}) {
       const response = await fetch(path, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
@@ -431,12 +446,96 @@
         stopBelongingSpeech();
         renderBelongings();
       }
+      if (button.dataset.page !== 'chat') stopChatPolling();
       document.querySelectorAll('[data-page]').forEach(navButton => navButton.classList.toggle('active', navButton === button));
       document.querySelectorAll('.app-view').forEach(view => { view.hidden = view.id !== `page-${button.dataset.page}`; });
       if (button.dataset.page === 'friends') renderFriends();
       if (button.dataset.page === 'rooms') { renderFriendPicker(); renderRooms(); }
       if (button.dataset.page === 'belongings') renderBelongings();
+      if (button.dataset.page === 'chat') {
+        renderChatFriends();
+        if (activeChatUsername && friends.some(friend => friend.username === activeChatUsername)) openChat(activeChatUsername);
+        else resetChatView();
+      }
     }));
+    function stopChatPolling() {
+      clearInterval(chatPollTimer);
+      chatPollTimer = null;
+      chatRequestVersion += 1;
+    }
+    function resetChatView() {
+      activeChatUsername = null;
+      chatMessages = [];
+      document.querySelector('#chat-title').textContent = 'フレンドを選択';
+      document.querySelector('#chat-status').textContent = '';
+      document.querySelector('#chat-input').disabled = true;
+      document.querySelector('#chat-send').disabled = true;
+      document.querySelector('#chat-messages').innerHTML = '<div class="chat-empty">左の一覧からフレンドを選ぶと、会話を表示します。</div>';
+    }
+    function renderChatFriends() {
+      const list = document.querySelector('#chat-friend-list');
+      list.innerHTML = friends.length ? friends.map(friend => `<button class="chat-friend ${friend.username === activeChatUsername ? 'active' : ''}" type="button" data-chat-friend="${escapeHtml(friend.username)}"><span class="avatar">${escapeHtml(friend.username.slice(0, 1).toUpperCase())}</span><span>@${escapeHtml(friend.username)}</span></button>`).join('') : '<div class="chat-empty-inline">チャットするには、先にフレンドを登録してください。</div>';
+    }
+    function renderChatMessages() {
+      const container = document.querySelector('#chat-messages');
+      const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+      if (!chatMessages.length) {
+        container.innerHTML = '<div class="chat-empty">まだメッセージはありません。最初のメッセージを送ってみましょう。</div>';
+        return;
+      }
+      container.innerHTML = chatMessages.map(message => {
+        const mine = message.sender === currentUser.username;
+        const time = new Date(message.created_at * 1000).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return `<div class="chat-message ${mine ? 'mine' : ''}">${escapeHtml(message.body)}<span class="chat-message-meta">${mine ? '自分' : `@${escapeHtml(message.sender)}`} · ${time}</span></div>`;
+      }).join('');
+      if (wasNearBottom) container.scrollTop = container.scrollHeight;
+    }
+    async function refreshChatMessages(version = chatRequestVersion) {
+      if (!activeChatUsername || chatLoading || version !== chatRequestVersion) return;
+      chatLoading = true;
+      try {
+        const response = await api(`/api/chats/${encodeURIComponent(activeChatUsername)}`);
+        if (version !== chatRequestVersion) return;
+        if (JSON.stringify(response.messages) !== JSON.stringify(chatMessages)) {
+          chatMessages = response.messages;
+          renderChatMessages();
+        }
+        document.querySelector('#chat-status').textContent = '接続中';
+      } catch (error) {
+        if (version === chatRequestVersion) document.querySelector('#chat-status').textContent = '再接続中';
+      } finally { chatLoading = false; }
+    }
+    function openChat(username) {
+      stopChatPolling();
+      activeChatUsername = username;
+      chatMessages = [];
+      renderChatFriends();
+      document.querySelector('#chat-title').textContent = `@${username}`;
+      document.querySelector('#chat-status').textContent = '接続中';
+      document.querySelector('#chat-input').disabled = false;
+      document.querySelector('#chat-send').disabled = false;
+      document.querySelector('#chat-messages').innerHTML = '<div class="chat-empty">メッセージを読み込み中…</div>';
+      const version = chatRequestVersion;
+      refreshChatMessages(version);
+      chatPollTimer = setInterval(() => refreshChatMessages(version), 3000);
+    }
+    document.querySelector('#chat-friend-list').addEventListener('click', event => {
+      const button = event.target.closest('[data-chat-friend]');
+      if (button) openChat(button.dataset.chatFriend);
+    });
+    document.querySelector('#chat-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const body = document.querySelector('#chat-input').value.trim();
+      if (!activeChatUsername || !body) return;
+      const sendButton = document.querySelector('#chat-send');
+      sendButton.disabled = true;
+      try {
+        await api(`/api/chats/${encodeURIComponent(activeChatUsername)}`, { method: 'POST', body: JSON.stringify({ body }) });
+        document.querySelector('#chat-input').value = '';
+        await refreshChatMessages();
+      } catch (error) { showToast('メッセージを送信できません', error.message); }
+      finally { sendButton.disabled = !activeChatUsername; }
+    });
     document.querySelector('#belonging-form').addEventListener('submit', async event => {
       event.preventDefault();
       const name = document.querySelector('#belonging-name').value.trim();
@@ -696,6 +795,9 @@
     });
     document.querySelector('#logout-button').addEventListener('click', async () => {
       await saveQueue;
+      stopChatPolling();
+      activeChatUsername = null;
+      chatMessages = [];
       stopBelongingSpeech();
       try { await api('/api/logout', { method: 'POST', body: '{}' }); } catch {}
       currentUser = null; reminders = []; friends = []; rooms = []; belongings = []; speakingBelongingId = null;
