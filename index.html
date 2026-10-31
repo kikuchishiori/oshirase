@@ -25,6 +25,8 @@
     .shared-timeline{width:100%;min-width:0;max-width:100%;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.timeline-day{min-width:0;max-width:100%;margin:0 0 20px}.timeline-day h3{margin:0 0 9px;font-size:13px;font-weight:700}.timeline-scroll{width:100%;min-width:0;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fffefa}.timeline-board{min-width:calc(46px + var(--member-count) * 145px)}.timeline-head,.timeline-body{display:grid;grid-template-columns:46px repeat(var(--member-count),minmax(145px,1fr))}.timeline-head{position:sticky;top:0;z-index:2;background:#edf1e9;border-bottom:1px solid var(--line)}.timeline-head-member{padding:10px 7px;text-align:center;border-left:1px solid var(--line);font-size:11px;font-weight:700;color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.timeline-time-spacer{border-right:1px solid var(--line)}.timeline-body{height:960px}.timeline-time-axis{position:relative;height:960px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,#e3e7df 39px,#e3e7df 40px);font-size:10px;color:#859087}.timeline-time-axis span{position:absolute;left:4px;transform:translateY(-50%);background:#fffefa;padding-right:2px}.timeline-member-track{position:relative;height:960px;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,#e3e7df 39px,#e3e7df 40px)}.timeline-event{position:absolute;box-sizing:border-box;overflow:hidden;padding:4px 5px;border-left:3px solid var(--green);border-radius:3px;background:#e6efe7;color:#294a3d;font-size:10px;z-index:1}.timeline-event strong,.timeline-event small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.timeline-event small{margin-top:2px;color:#65786c;font-size:9px}.timeline-empty{position:absolute;top:12px;left:0;right:0;text-align:center;color:#a0a9a0;font-size:11px}.timeline-no-members{grid-column:2/-1;padding:20px;color:#859087;font-size:12px}.room-card{min-width:0}.room-access input:focus{outline:2px solid rgba(49,93,80,.2);outline-offset:1px}
     .timeline-day-nav{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:8px;margin-bottom:10px}.timeline-day-nav h3{margin:0;text-align:center;font-size:13px;font-weight:700}.timeline-day-nav button{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--green)}.timeline-day-nav button:hover:not(:disabled){background:#e9eee7}.timeline-day-nav button:disabled{opacity:.35;cursor:default}.timeline-day-nav svg{width:16px}.shared-timeline>.timeline-scroll{margin-bottom:20px}
     @media(max-width:760px){.timeline-board{min-width:calc(42px + var(--member-count) * 130px)}.timeline-head,.timeline-body{grid-template-columns:42px repeat(var(--member-count),minmax(130px,1fr))}.timeline-time-axis,.timeline-member-track,.timeline-body{height:960px}.timeline-time-axis,.timeline-member-track{background-size:100% 40px}.timeline-event{font-size:9px;padding:3px}.timeline-head-member{font-size:10px}.timeline-day-nav{grid-template-columns:40px 1fr 40px}.timeline-day-nav button{width:38px;height:38px}}
+    .belongings-layout{grid-template-columns:minmax(240px,330px) minmax(0,1fr)}.belonging-list{display:grid;gap:9px}.belonging-row{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--line);border-radius:7px;background:#fffefa}.belonging-toggle{display:flex;align-items:center;gap:11px;flex:1;min-width:0;border:0;background:transparent;text-align:left;color:var(--ink);padding:4px}.belonging-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:50%;background:#e8eee6;color:var(--green)}.belonging-icon svg{width:18px}.belonging-name{font-size:14px;font-weight:700;overflow-wrap:anywhere}.belonging-state{font-size:10px;color:#718078;margin-top:3px}.belonging-row.speaking{border-color:#77a28e;background:#f1f7f1}.belonging-row.speaking .belonging-icon{background:var(--green);color:white}.belonging-delete{flex:none;width:34px;height:34px;border:0;border-radius:5px;background:transparent;color:#89938c;font-size:18px}.belonging-delete:hover{background:#f8e9e4;color:#ad5038}.belonging-empty{padding:30px 12px;text-align:center;border:1px dashed #cbd0c8;border-radius:7px;color:#89938c;font-size:12px}
+    @media(max-width:760px){.belongings-layout{grid-template-columns:minmax(0,1fr)}}
   </style>
 </head>
 <body>
@@ -42,7 +44,7 @@
       <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>お知らせ</div>
       <div class="session-tools"><span id="signed-in-user"></span><button type="button" id="logout-button">ログアウト</button><div class="top-date" id="today"></div></div>
     </header>
-    <nav class="main-nav" aria-label="メインメニュー"><button class="active" data-page="schedule">予定カレンダー</button><button data-page="friends">フレンド</button><button data-page="rooms">ルーム</button></nav>
+    <nav class="main-nav" aria-label="メインメニュー"><button class="active" data-page="schedule">予定カレンダー</button><button data-page="belongings">持ち物</button><button data-page="friends">フレンド</button><button data-page="rooms">ルーム</button></nav>
     <section class="app-view" id="page-schedule">
     <section class="intro">
       <div><div class="eyebrow">A LITTLE NUDGE, RIGHT ON TIME</div><h1>忘れたくないことに、<br>ちょうどいい合図を。</h1><p>日時を決めるだけ。あとはこのアプリが覚えておきます。</p></div>
@@ -71,6 +73,14 @@
         <div class="footer">このページを開いている間、指定した時刻に通知します。予定はこのブラウザに保存されます。</div>
       </section>
     </div>
+    </section>
+    <section class="app-view" id="page-belongings" hidden>
+      <div class="view-intro"><div class="eyebrow">DON'T FORGET</div><h1>持ち物</h1><p>登録した持ち物を5秒ごとに読み上げます。項目をタップすると読み上げを停止・再開できます。</p></div>
+      <div class="social-layout belongings-layout">
+        <form class="panel" id="belonging-form"><h2>持ち物を追加</h2><div class="field"><label for="belonging-name">持ち物</label><input id="belonging-name" name="name" maxlength="80" placeholder="例：財布、鍵、社員証" required></div><button class="submit" type="submit">持ち物を登録して読み上げる</button></form>
+        <section class="panel"><div class="list-head"><h2>持ち物リスト</h2><span class="count" id="belonging-count">0 件</span></div><div class="belonging-list" id="belonging-list" aria-live="polite"></div></section>
+      </div>
+      <p class="demo-notice">読み上げにはブラウザーの音声機能を使います。この画面を開いている間に動作します。端末が消音中の場合は音が聞こえないことがあります。</p>
     </section>
     <section class="app-view" id="page-friends" hidden>
       <div class="view-intro"><div class="eyebrow">YOUR PEOPLE</div><h1>フレンド</h1><p>ユーザー名を検索して、予定を共有する相手を登録します。</p></div>
@@ -104,6 +114,10 @@
     let friends = [];
     let rooms = [];
     let unlockedRooms = {};
+    let belongings = [];
+    let speechTimer = null;
+    let speakingBelongingId = null;
+    let speechEpoch = 0;
     let currentUser = null;
     let saveQueue = Promise.resolve();
     function createId() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
@@ -116,11 +130,13 @@
       return payload;
     }
     async function loadAccountData() {
-      const [storedReminders, storedFriends, storedRooms] = await Promise.all([api('/api/reminders'), api('/api/friends'), api('/api/rooms')]);
+      const [storedReminders, storedFriends, storedRooms, storedBelongings] = await Promise.all([api('/api/reminders'), api('/api/friends'), api('/api/rooms'), api('/api/belongings')]);
       reminders = storedReminders.reminders;
       friends = storedFriends.friends;
       rooms = storedRooms.rooms;
+      belongings = storedBelongings.belongings;
       unlockedRooms = {};
+      speakingBelongingId = null;
     }
     function saveRooms() { return Promise.resolve(); }
     function escapeHtml(value) {
@@ -131,6 +147,56 @@
       const snapshot = JSON.stringify(reminders);
       saveQueue = saveQueue.catch(() => {}).then(() => api('/api/reminders', { method: 'PUT', body: JSON.stringify({ reminders: JSON.parse(snapshot) }) })).catch(error => showToast('予定を保存できません', error.message));
       return saveQueue;
+    }
+    function saveBelongings() {
+      return api('/api/belongings', { method: 'PUT', body: JSON.stringify({ belongings }) }).catch(error => showToast('持ち物を保存できません', error.message));
+    }
+    function stopBelongingSpeech() {
+      speechEpoch += 1;
+      clearTimeout(speechTimer);
+      speechTimer = null;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    }
+    function speakBelonging(item, epoch) {
+      if (epoch !== speechEpoch || speakingBelongingId !== item.id || document.querySelector('#page-belongings').hidden) return;
+      if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+        speakingBelongingId = null;
+        renderBelongings();
+        showToast('音声読み上げに対応していません', 'SafariまたはChromeの最新バージョンをお試しください');
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(item.name);
+      utterance.lang = 'ja-JP';
+      utterance.onend = () => {
+        if (epoch === speechEpoch && speakingBelongingId === item.id) speechTimer = setTimeout(() => speakBelonging(item, epoch), 5000);
+      };
+      utterance.onerror = () => {
+        if (epoch === speechEpoch) {
+          speakingBelongingId = null;
+          renderBelongings();
+          showToast('音声を再生できません', '端末の音量とブラウザーの音声設定を確認してください');
+        }
+      };
+      window.speechSynthesis.speak(utterance);
+    }
+    function startBelongingSpeech(item) {
+      stopBelongingSpeech();
+      speakingBelongingId = item.id;
+      const epoch = speechEpoch;
+      renderBelongings();
+      speakBelonging(item, epoch);
+    }
+    function renderBelongings() {
+      const list = document.querySelector('#belonging-list');
+      document.querySelector('#belonging-count').textContent = `${belongings.length} 件`;
+      if (!belongings.length) {
+        list.innerHTML = '<div class="belonging-empty">持ち物はまだありません</div>';
+        return;
+      }
+      list.innerHTML = belongings.map(item => {
+        const active = item.id === speakingBelongingId;
+        return `<article class="belonging-row ${active ? 'speaking' : ''}"><button class="belonging-toggle" type="button" data-belonging-toggle="${escapeHtml(item.id)}" aria-pressed="${active}"><span class="belonging-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8h14l1 13H4L5 8Zm3 0a4 4 0 0 1 8 0"/></svg></span><span><span class="belonging-name">${escapeHtml(item.name)}</span><span class="belonging-state">${active ? '読み上げ中 · タップで停止' : '停止中 · タップで読み上げ'}</span></span></button><button class="belonging-delete" type="button" data-belonging-delete="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}を削除" title="削除">×</button></article>`;
+      }).join('');
     }
     function localDateTime(date) {
       const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -324,11 +390,50 @@
       render();
     });
     document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => {
+      if (button.dataset.page !== 'belongings' && speakingBelongingId) {
+        stopBelongingSpeech();
+        speakingBelongingId = null;
+      }
       document.querySelectorAll('[data-page]').forEach(navButton => navButton.classList.toggle('active', navButton === button));
       document.querySelectorAll('.app-view').forEach(view => { view.hidden = view.id !== `page-${button.dataset.page}`; });
       if (button.dataset.page === 'friends') renderFriends();
       if (button.dataset.page === 'rooms') { renderFriendPicker(); renderRooms(); }
+      if (button.dataset.page === 'belongings') renderBelongings();
     }));
+    document.querySelector('#belonging-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const name = document.querySelector('#belonging-name').value.trim();
+      if (!name) return;
+      const item = { id: createId(), name };
+      belongings.push(item);
+      await saveBelongings();
+      event.target.reset();
+      startBelongingSpeech(item);
+    });
+    document.querySelector('#belonging-list').addEventListener('click', async event => {
+      const toggle = event.target.closest('[data-belonging-toggle]');
+      if (toggle) {
+        const item = belongings.find(candidate => candidate.id === toggle.dataset.belongingToggle);
+        if (!item) return;
+        if (speakingBelongingId === item.id) {
+          stopBelongingSpeech();
+          speakingBelongingId = null;
+          renderBelongings();
+        } else {
+          startBelongingSpeech(item);
+        }
+        return;
+      }
+      const remove = event.target.closest('[data-belonging-delete]');
+      if (!remove) return;
+      if (speakingBelongingId === remove.dataset.belongingDelete) {
+        stopBelongingSpeech();
+        speakingBelongingId = null;
+      }
+      belongings = belongings.filter(item => item.id !== remove.dataset.belongingDelete);
+      renderBelongings();
+      await saveBelongings();
+    });
     function renderFriends(results = null) {
       const list = document.querySelector('#friend-list');
       list.innerHTML = friends.length ? friends.map(user => {
@@ -549,8 +654,9 @@
     });
     document.querySelector('#logout-button').addEventListener('click', async () => {
       await saveQueue;
+      stopBelongingSpeech();
       try { await api('/api/logout', { method: 'POST', body: '{}' }); } catch {}
-      currentUser = null; reminders = []; friends = []; rooms = [];
+      currentUser = null; reminders = []; friends = []; rooms = []; belongings = []; speakingBelongingId = null;
       document.querySelector('#app-shell').hidden = true;
       document.querySelector('#auth-screen').hidden = false;
       authForm.reset(); setAuthMode('login');
