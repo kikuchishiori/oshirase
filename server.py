@@ -35,6 +35,7 @@ def initialize_database():
                 password_salt BLOB NOT NULL,
                 password_hash BLOB NOT NULL,
                 reminders_json TEXT NOT NULL DEFAULT '[]',
+                belongings_json TEXT NOT NULL DEFAULT '[]',
                 created_at INTEGER NOT NULL
             );
             CREATE TABLE IF NOT EXISTS sessions (
@@ -68,6 +69,9 @@ def initialize_database():
             CREATE INDEX IF NOT EXISTS idx_room_members_user ON room_members(user_id);
             """
         )
+        user_columns = {row["name"] for row in db.execute("PRAGMA table_info(users)")}
+        if "belongings_json" not in user_columns:
+            db.execute("ALTER TABLE users ADD COLUMN belongings_json TEXT NOT NULL DEFAULT '[]'")
         db.execute("DELETE FROM sessions WHERE expires_at <= ?", (int(time.time()),))
 
 
@@ -144,6 +148,9 @@ class AppHandler(SimpleHTTPRequestHandler):
             if path.path == "/api/reminders":
                 row = db.execute("SELECT reminders_json FROM users WHERE id = ?", (user["id"],)).fetchone()
                 return self.send_json(200, {"reminders": json.loads(row["reminders_json"])})
+            if path.path == "/api/belongings":
+                row = db.execute("SELECT belongings_json FROM users WHERE id = ?", (user["id"],)).fetchone()
+                return self.send_json(200, {"belongings": json.loads(row["belongings_json"])})
             if path.path == "/api/users":
                 query = parse_qs(path.query).get("q", [""])[0].strip()
                 if len(query) < 2 or not re.fullmatch(r"[a-zA-Z0-9_]{2,24}", query):
@@ -282,24 +289,27 @@ class AppHandler(SimpleHTTPRequestHandler):
         self.send_json(404, {"error": "not_found"})
 
     def do_PUT(self):
-        if urlparse(self.path).path != "/api/reminders":
+        path = urlparse(self.path).path
+        if path not in ("/api/reminders", "/api/belongings"):
             return self.send_json(404, {"error": "not_found"})
         try:
             payload = self.read_json()
         except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
             return self.send_json(400, {"error": "invalid_request"})
-        reminders = payload.get("reminders")
-        if not isinstance(reminders, list) or len(reminders) > 10000:
-            return self.send_json(400, {"error": "invalid_reminders"})
+        field = "reminders" if path == "/api/reminders" else "belongings"
+        column = "reminders_json" if path == "/api/reminders" else "belongings_json"
+        records = payload.get(field)
+        if not isinstance(records, list) or len(records) > 10000:
+            return self.send_json(400, {"error": f"invalid_{field}"})
         try:
-            encoded = json.dumps(reminders, ensure_ascii=False, allow_nan=False)
+            encoded = json.dumps(records, ensure_ascii=False, allow_nan=False)
         except (TypeError, ValueError):
-            return self.send_json(400, {"error": "invalid_reminders"})
+            return self.send_json(400, {"error": f"invalid_{field}"})
         with connect() as db:
             user = self.require_user(db)
             if user is None:
                 return
-            db.execute("UPDATE users SET reminders_json = ? WHERE id = ?", (encoded, user["id"]))
+            db.execute(f"UPDATE users SET {column} = ? WHERE id = ?", (encoded, user["id"]))
         self.send_json(200, {"ok": True})
 
     def do_DELETE(self):

@@ -125,7 +125,7 @@
       const response = await fetch(path, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
       if (!response.headers.get('Content-Type')?.includes('application/json')) throw new Error('api_unavailable');
       const payload = await response.json().catch(() => ({}));
-      if (response.status === 404) throw new Error('api_unavailable');
+      if (response.status === 404) throw new Error(payload.error === 'not_found' ? 'api_outdated' : 'api_unavailable');
       if (!response.ok) throw new Error(payload.error || 'request_failed');
       return payload;
     }
@@ -619,7 +619,7 @@
     }
     function authErrorMessage(error) {
       if (location.protocol === 'file:') return 'index.htmlをファイルから直接開いています。ログインにはサーバーが必要です。python3 server.py を起動して、http://localhost:8000 から開いてください。';
-      return ({ username_taken: 'このユーザー名はすでに使われています。', invalid_login: 'ユーザー名またはパスワードが違います。アカウントがなければ「新規登録」を選んでください。', invalid_credentials: 'ユーザー名は半角英数字と_の3〜24文字、パスワードは8文字以上にしてください。', login_required: 'ログインしてください。', api_unavailable: 'このURLにはアプリのAPIサーバーがありません。Macで python3 server.py を起動し、http://localhost:8000 で開いてください。Teamsなどの公開URLで使うには、PythonサーバーもHTTPS環境へ公開する必要があります。' })[error] || 'サーバーに接続できません。Macで python3 server.py が起動中か確認してください。';
+      return ({ username_taken: 'このユーザー名はすでに使われています。', invalid_login: 'ユーザー名またはパスワードが違います。アカウントがなければ「新規登録」を選んでください。', invalid_credentials: 'ユーザー名は半角英数字と_の3〜24文字、パスワードは8文字以上にしてください。', login_required: 'ログインしてください。', api_outdated: '公開サーバーのAPIが古い状態です。GitHubで最新のserver.pyを同じリポジトリに反映し、Renderの再デプロイ完了後にもう一度ログインしてください。', api_unavailable: 'このURLにはアプリのAPIサーバーがありません。Macで python3 server.py を起動し、http://localhost:8000 で開いてください。Teamsなどの公開URLで使うには、PythonサーバーもHTTPS環境へ公開する必要があります。' })[error] || 'サーバーに接続できません。Macで python3 server.py が起動中か確認してください。';
     }
     async function openApp(user) {
       currentUser = user;
