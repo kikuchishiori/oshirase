@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: oshirase
+    runtime: python
+    plan: free
+    buildCommand: python -m py_compile server.py
+    startCommand: python server.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_PATH
+        value: /tmp/oshirase.sqlite3
+      - key: PYTHON_VERSION
+        value: 3.11.9

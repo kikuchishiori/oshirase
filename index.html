@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f3ed">
+  <title>お知らせ - 通知リマインダー</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;600;700&display=swap');
+    :root{font-family:'DM Sans','Hiragino Kaku Gothic ProN',sans-serif;color:#202b29;background:#f4f3ed;font-synthesis:none;text-rendering:optimizeLegibility;--ink:#202b29;--muted:#75807b;--green:#315d50;--line:#dedfd6;--coral:#df795e;--paper:#fffefa}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 92% 8%,rgba(223,121,94,.12),transparent 25rem),linear-gradient(135deg,#f4f3ed,#f7f5ef 55%,#eef1e8)}button,input,textarea{font:inherit}button{cursor:pointer}
+    .shell{max-width:1120px;margin:0 auto;padding:32px 36px 64px}.topbar{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:22px}.brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.02em}.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--green);color:white}.brand-mark svg{width:18px}.top-date{font-size:13px;color:var(--muted)}
+    .intro{padding:42px 0 28px;display:flex;align-items:end;justify-content:space-between;gap:24px}.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--coral);text-transform:uppercase}.intro h1{font-family:'Noto Serif JP',serif;font-size:clamp(28px,4vw,40px);font-weight:600;letter-spacing:0;margin:9px 0 7px}.intro p{margin:0;color:var(--muted);font-size:14px}.permission{display:flex;align-items:center;gap:10px;padding:10px 13px;background:rgba(255,254,250,.72);border:1px solid var(--line);border-radius:8px;font-size:12px;color:#596560;white-space:nowrap}.status-dot{width:8px;height:8px;border-radius:50%;background:#c9a04b}.permission.ready .status-dot{background:#5b9678}.permission button{border:0;background:none;color:var(--green);font-weight:700;padding:0;text-decoration:underline;text-underline-offset:3px}
+    .layout{display:grid;grid-template-columns:minmax(290px,360px) minmax(0,1fr);gap:42px;align-items:start}.compose{position:sticky;top:24px;padding:24px;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(34,52,43,.045)}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}.section-head h2{font-family:'Noto Serif JP',serif;font-size:17px;font-weight:600;margin:0}.step{font-size:11px;color:#9aa19b}.field{margin-bottom:17px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:7px}.field input,.field textarea{width:100%;border:1px solid #d9ddd5;border-radius:6px;padding:11px 12px;background:#fff;color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s}.field input:focus,.field textarea:focus{border-color:#6b9583;box-shadow:0 0 0 3px rgba(49,93,80,.11)}.field textarea{resize:vertical;min-height:78px}.field input::placeholder,.field textarea::placeholder{color:#aab0aa}.quick-times{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.quick-times button{padding:6px 9px;border:1px solid var(--line);border-radius:5px;background:#f8f8f3;color:#69736e;font-size:11px}.quick-times button:hover{border-color:#86a392;color:var(--green)}.submit{display:flex;width:100%;align-items:center;justify-content:center;gap:8px;background:var(--green);border:0;border-radius:6px;color:white;font-weight:700;padding:12px;margin-top:4px;transition:background .15s,transform .15s}.submit:hover{background:#24483d;transform:translateY(-1px)}.submit svg{width:16px}
+    .list-head{display:flex;align-items:center;justify-content:space-between;margin:3px 0 15px}.list-head h2{font-family:'Noto Serif JP',serif;font-size:20px;margin:0;font-weight:600}.count{font-size:12px;color:var(--muted)}.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:14px}.tab{background:none;border:0;border-bottom:2px solid transparent;padding:0 0 11px;color:#828a84;font-size:12px}.tab.active{border-color:var(--green);color:var(--green);font-weight:700}.tab b{font-size:10px;margin-left:4px;color:#9ca39c}.items{display:grid;gap:10px}.reminder{display:grid;grid-template-columns:58px 1fr auto;align-items:center;gap:14px;padding:16px;background:rgba(255,254,250,.84);border:1px solid var(--line);border-radius:8px;animation:arrive .3s ease both}.timebox{display:grid;place-items:center;align-content:center;min-height:56px;border-right:1px solid var(--line);padding-right:13px;color:var(--green)}.timebox strong{font-size:17px;line-height:1.2}.timebox small{font-size:10px;margin-top:4px;color:#87918a}.item-title{font-size:14px;font-weight:700;margin:0 0 5px;overflow-wrap:anywhere}.item-message{font-size:12px;color:#747e78;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}.item-meta{font-size:10px;color:#9aa19b;margin-top:7px}.remove{display:grid;place-items:center;width:32px;height:32px;border:0;background:transparent;color:#929b95;border-radius:5px}.remove:hover{background:#f8e9e4;color:#ad5038}.remove svg{width:16px}.empty{padding:52px 18px;text-align:center;border:1px dashed #cbd0c8;border-radius:8px;color:#87918a}.empty-mark{margin:0 auto 13px;width:42px;height:42px;display:grid;place-items:center;background:#e8eee6;color:var(--green);border-radius:50%}.empty p{font-size:13px;margin:0}.empty small{display:block;margin-top:6px;font-size:11px;color:#a0a7a1}.toast{position:fixed;right:24px;bottom:24px;z-index:5;max-width:min(360px,calc(100vw - 32px));padding:15px 18px;background:#203d34;color:white;border-radius:8px;box-shadow:0 12px 36px #172b2540;animation:arrive .25s ease both}.toast strong{display:block;font-size:13px;margin-bottom:4px}.toast span{font-size:12px;color:#d4dfd8}.toast[hidden]{display:none}.footer{margin-top:27px;font-size:11px;color:#939b94}.footer:before{content:'';display:block;width:100%;height:1px;background:var(--line);margin-bottom:14px}@keyframes arrive{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:760px){.shell{padding:20px 18px 40px}.intro{display:block;padding:32px 0 20px}.permission{margin-top:18px;width:max-content;max-width:100%;white-space:normal}.layout{grid-template-columns:1fr;gap:30px}.compose{position:static}.reminder{grid-template-columns:52px 1fr auto;gap:10px;padding:13px}.top-date{font-size:11px}.footer{line-height:1.7}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+    .main-nav{display:flex;gap:8px;padding:17px 0 0;border-bottom:1px solid var(--line)}.main-nav button{background:none;border:0;border-bottom:2px solid transparent;padding:0 14px 12px;color:#75807b;font-size:13px}.main-nav button.active{border-color:var(--green);color:var(--green);font-weight:700}.app-view[hidden]{display:none}.day-filter{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:18px 0 16px;padding:13px 15px;background:#e9eee7;border-radius:7px}.day-filter label{font-size:12px;font-weight:700}.day-filter input{border:1px solid #d5dbd2;border-radius:5px;background:white;padding:7px 9px;color:var(--ink)}.view-intro{padding:32px 0 22px}.view-intro h1{font-family:'Noto Serif JP',serif;font-size:27px;font-weight:600;margin:8px 0}.view-intro p{font-size:13px;color:var(--muted);margin:0}.social-layout{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:30px;align-items:start}.panel{padding:20px;background:var(--paper);border:1px solid var(--line);border-radius:8px}.panel h2{font-family:'Noto Serif JP',serif;font-size:17px;font-weight:600;margin:0 0 16px}.panel-note{margin:12px 0 0;color:#8b958e;font-size:11px;line-height:1.6}.search-field{display:flex;gap:8px}.search-field input{flex:1;min-width:0;border:1px solid #d9ddd5;border-radius:6px;padding:10px 11px;background:white}.small-action{border:0;border-radius:5px;background:var(--green);color:white;padding:0 13px;font-size:12px;font-weight:700}.people-list,.room-list{display:grid;gap:9px}.person-row,.room-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid var(--line);border-radius:7px;background:#fffefa}.person-info{display:flex;align-items:center;gap:10px;min-width:0}.avatar{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:50%;background:#e8eee6;color:var(--green);font-weight:700;font-size:13px}.person-name{font-size:13px;font-weight:700}.person-handle,.room-sub{font-size:11px;color:#89928c;margin-top:3px}.person-row button,.room-card button{flex:none;border:1px solid #cad6cb;border-radius:5px;background:white;color:var(--green);padding:7px 10px;font-size:11px;font-weight:700}.friend-list{margin-top:20px}.friend-list h3,.shared-list h3{margin:0 0 10px;font-size:12px}.room-form{display:grid;gap:0}.room-form .field{margin-bottom:13px}.room-form .field input{width:100%;border:1px solid #d9ddd5;border-radius:6px;padding:10px 11px;background:white}.friend-picker{display:grid;gap:7px;max-height:142px;overflow:auto;padding:2px}.friend-picker label{display:flex;align-items:center;gap:8px;font-size:12px;color:#56625c}.friend-picker input{accent-color:var(--green)}.room-card{align-items:flex-start;flex-direction:column}.room-card-head{display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px}.room-title{font-size:14px;font-weight:700}.room-password{font-family:monospace;font-size:11px;color:#68736c}.room-members{font-size:11px;color:#75807b}.shared-list{width:100%;padding-top:8px;border-top:1px solid var(--line)}.shared-event{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:11px;color:#47534d}.shared-event time{white-space:nowrap;color:#78837c}.demo-notice{margin:18px 0 0;padding:10px 12px;background:#f8efe7;color:#80634e;border-radius:6px;font-size:11px;line-height:1.6}
+    .calendar{margin:18px 0 22px;padding:17px;background:rgba(255,254,250,.84);border:1px solid var(--line);border-radius:8px}.calendar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.calendar-month{font-family:'Noto Serif JP',serif;font-weight:600;font-size:17px}.calendar-controls{display:flex;align-items:center;gap:7px}.calendar-controls button{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--green)}.calendar-controls button:hover{background:#e9eee7}.calendar-controls svg{width:16px}.calendar-controls .today-button{width:auto;padding:0 10px;font-size:11px}.calendar-weekdays,.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center}.calendar-weekdays{margin-bottom:5px}.calendar-weekdays span{padding:5px 0;font-size:10px;color:#8b958e}.calendar-weekdays span:first-child{color:#bd725c}.calendar-weekdays span:last-child{color:#67809a}.calendar-day{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:44px;margin:2px;border:0;border-radius:6px;background:transparent;color:var(--ink);font-size:12px}.calendar-day:hover{background:#edf1e9}.calendar-day.outside{color:#b7bdb7}.calendar-day.selected{background:var(--green);color:white;font-weight:700}.calendar-day.today:not(.selected){box-shadow:inset 0 0 0 1px #78a08d}.calendar-day .day-count{height:5px;min-width:5px;border-radius:5px;background:var(--coral)}.calendar-day.selected .day-count{background:#f3c1a8}.calendar-detail-title{font-family:'Noto Serif JP',serif;font-size:16px;margin:0 0 12px}
+    @media(max-width:760px){.shell{width:100%;min-width:0;padding:16px 14px 36px}.topbar{gap:10px}.top-date{text-align:right}.intro{padding:24px 0 16px}.intro h1{font-size:26px}.layout,.social-layout{grid-template-columns:minmax(0,1fr);min-width:0;gap:20px}.compose,.schedule{width:100%;min-width:0}.schedule{order:1}.compose{order:2}.compose .tabs{gap:8px;flex-wrap:wrap}.compose .tabs .tab{flex:1 1 120px;padding:8px 4px;line-height:1.4}.main-nav{overflow-x:auto;gap:2px}.main-nav button{flex:1 0 auto;padding-left:9px;padding-right:9px;white-space:nowrap}.calendar{min-width:0;padding:12px 10px}.calendar-month{white-space:nowrap;font-size:15px}.calendar-head{gap:6px}.calendar-controls{gap:4px}.calendar-controls button{width:31px;height:34px}.calendar-controls .today-button{width:auto;padding:0 7px}.calendar-day{min-width:0;width:100%;min-height:40px;margin:0;font-size:12px}.calendar-weekdays span{font-size:10px}.day-filter{align-items:flex-start;flex-direction:column}.reminder{grid-template-columns:52px minmax(0,1fr) auto;gap:10px;padding:13px}.view-intro{padding:25px 0 18px}.footer{line-height:1.7}}
+    @media(max-width:360px){.shell{padding-right:10px;padding-left:10px}.calendar{padding:10px 7px}.calendar-controls{gap:3px}.calendar-controls button{width:29px;height:32px}.calendar-controls .today-button{width:34px;padding:0;font-size:10px}.calendar-day{min-height:36px;font-size:11px}.compose{padding:18px}.permission{gap:7px;padding:9px;font-size:11px}}
+    .auth-screen{min-height:100vh;display:grid;place-items:center;padding:24px}.auth-screen[hidden]{display:none}.auth-panel{width:min(100%,410px);padding:30px;background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 50px rgba(34,52,43,.08)}.auth-brand{display:flex;align-items:center;gap:11px;font-weight:700}.auth-panel h1{font-family:'Noto Serif JP',serif;font-size:27px;font-weight:600;margin:28px 0 7px}.auth-lead{font-size:13px;color:var(--muted);margin:0 0 22px}.auth-mode{display:flex;border-bottom:1px solid var(--line);margin-bottom:20px}.auth-mode button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:10px 6px;color:#7a847e;font-size:13px}.auth-mode button.active{border-color:var(--green);color:var(--green);font-weight:700}.auth-form .field{margin-bottom:15px}.auth-form .field input{width:100%;border:1px solid #d9ddd5;border-radius:6px;padding:12px;background:white}.auth-submit{width:100%;border:0;border-radius:6px;background:var(--green);color:white;padding:13px;font-weight:700}.auth-error{min-height:18px;margin:12px 0 0;color:#b24d38;font-size:12px}.auth-notice{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);color:#8b958e;font-size:11px;line-height:1.6}.session-tools{display:flex;align-items:center;gap:12px}.session-tools span{font-size:12px;color:var(--muted)}.session-tools button{border:1px solid var(--line);border-radius:5px;background:var(--paper);color:#526059;padding:7px 10px;font-size:11px}
+    @media(max-width:480px){.auth-screen{padding:16px}.auth-panel{padding:23px 20px}.auth-panel h1{font-size:24px}.session-tools{gap:6px}.session-tools span{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.session-tools button{padding:7px}}
+    .notify-toggle{display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:#52675b;font-size:11px}.notify-toggle input{width:16px;height:16px;margin:0;accent-color:var(--green)}.event-range{font-size:10px;color:#68756d;margin-top:4px}
+    .shared-timeline{width:100%;min-width:0;max-width:100%;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.timeline-day{min-width:0;max-width:100%;margin:0 0 20px}.timeline-day h3{margin:0 0 9px;font-size:13px;font-weight:700}.timeline-scroll{width:100%;min-width:0;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fffefa}.timeline-board{min-width:calc(46px + var(--member-count) * 145px)}.timeline-head,.timeline-body{display:grid;grid-template-columns:46px repeat(var(--member-count),minmax(145px,1fr))}.timeline-head{position:sticky;top:0;z-index:2;background:#edf1e9;border-bottom:1px solid var(--line)}.timeline-head-member{padding:10px 7px;text-align:center;border-left:1px solid var(--line);font-size:11px;font-weight:700;color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.timeline-time-spacer{border-right:1px solid var(--line)}.timeline-body{height:960px}.timeline-time-axis{position:relative;height:960px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,#e3e7df 39px,#e3e7df 40px);font-size:10px;color:#859087}.timeline-time-axis span{position:absolute;left:4px;transform:translateY(-50%);background:#fffefa;padding-right:2px}.timeline-member-track{position:relative;height:960px;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,#e3e7df 39px,#e3e7df 40px)}.timeline-event{position:absolute;box-sizing:border-box;overflow:hidden;padding:4px 5px;border-left:3px solid var(--green);border-radius:3px;background:#e6efe7;color:#294a3d;font-size:10px;z-index:1}.timeline-event strong,.timeline-event small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.timeline-event small{margin-top:2px;color:#65786c;font-size:9px}.timeline-empty{position:absolute;top:12px;left:0;right:0;text-align:center;color:#a0a9a0;font-size:11px}.timeline-no-members{grid-column:2/-1;padding:20px;color:#859087;font-size:12px}.room-card{min-width:0}.room-access input:focus{outline:2px solid rgba(49,93,80,.2);outline-offset:1px}
+    @media(max-width:760px){.timeline-board{min-width:calc(42px + var(--member-count) * 130px)}.timeline-head,.timeline-body{grid-template-columns:42px repeat(var(--member-count),minmax(130px,1fr))}.timeline-time-axis,.timeline-member-track,.timeline-body{height:960px}.timeline-time-axis,.timeline-member-track{background-size:100% 40px}.timeline-event{font-size:9px;padding:3px}.timeline-head-member{font-size:10px}}
+  </style>
+</head>
+<body>
+  <section class="auth-screen" id="auth-screen">
+    <div class="auth-panel">
+      <div class="auth-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>お知らせ</div>
+      <h1 id="auth-title">ログイン</h1><p class="auth-lead" id="auth-lead">アカウントにログインしてください。</p>
+      <div class="auth-mode"><button type="button" class="active" data-auth-mode="login">ログイン</button><button type="button" data-auth-mode="signup">新規登録</button></div>
+      <form class="auth-form" id="auth-form"><div class="field"><label for="auth-username">ユーザー名</label><input id="auth-username" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" placeholder="半角英数字・_ 3〜24文字" required></div><div class="field"><label for="auth-password">パスワード</label><input id="auth-password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="72" placeholder="8文字以上" required></div><button class="auth-submit" id="auth-submit" type="submit">ログイン</button><p class="auth-error" id="auth-error" role="status" aria-live="polite"></p></form>
+      <p class="auth-notice">アカウントと予定はサーバーにユーザーごとに保存されます。安全に使うため、HTTPSで公開されたサイトに接続してください。<br><a id="local-server-link" href="http://localhost:8000" hidden>起動中のアプリを開く</a></p>
+    </div>
+  </section>
+  <main class="shell" id="app-shell" hidden>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>お知らせ</div>
+      <div class="session-tools"><span id="signed-in-user"></span><button type="button" id="logout-button">ログアウト</button><div class="top-date" id="today"></div></div>
+    </header>
+    <nav class="main-nav" aria-label="メインメニュー"><button class="active" data-page="schedule">予定カレンダー</button><button data-page="friends">フレンド</button><button data-page="rooms">ルーム</button></nav>
+    <section class="app-view" id="page-schedule">
+    <section class="intro">
+      <div><div class="eyebrow">A LITTLE NUDGE, RIGHT ON TIME</div><h1>忘れたくないことに、<br>ちょうどいい合図を。</h1><p>日時を決めるだけ。あとはこのアプリが覚えておきます。</p></div>
+      <div class="permission" id="permission"><span class="status-dot"></span><span id="permission-text">通知はアプリ内でお知らせ</span><button id="enable-button" type="button">デスクトップ通知を許可</button></div>
+    </section>
+    <div class="layout">
+      <form class="compose" id="reminder-form">
+        <div class="section-head"><h2>新しい通知</h2><span class="step">01 / 通知をつくる</span></div>
+        <div class="field"><label>登録内容</label><div class="tabs" role="group" aria-label="登録内容"><button class="tab active" type="button" data-kind="event" aria-pressed="true">予定を登録</button><button class="tab" type="button" data-kind="entry" aria-pressed="false">予定入力をリマインド</button></div></div>
+        <div class="field"><label id="title-label" for="title">予定名</label><input id="title" name="title" maxlength="60" placeholder="例：薬を飲む" required></div>
+        <div class="field"><label for="message">メモ <span style="font-weight:400;color:#929b95">（任意）</span></label><textarea id="message" name="message" maxlength="180" placeholder="忘れずにやることを書いておく"></textarea></div>
+        <div class="field" id="event-times"><label for="event-start">開始日時</label><input id="event-start" type="datetime-local" required><label for="event-end" style="margin-top:12px">終了日時</label><input id="event-end" type="datetime-local" required></div>
+        <div class="field" id="entry-time" hidden><label for="datetime">入力をリマインドする日時</label><input id="datetime" name="datetime" type="datetime-local" disabled><div class="quick-times"><button type="button" data-minutes="10">10分後</button><button type="button" data-minutes="60">1時間後</button><button type="button" data-minutes="1440">明日</button></div></div>
+        <button class="submit" type="submit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg><span id="submit-label">予定を登録する</span></button>
+      </form>
+      <section class="schedule" aria-labelledby="schedule-title">
+        <div class="list-head"><h2 id="schedule-title">あなたの予定</h2><span class="count" id="count"></span></div>
+        <div class="calendar" aria-label="月間カレンダー">
+          <div class="calendar-head"><div class="calendar-month" id="calendar-month"></div><div class="calendar-controls"><button id="calendar-prev" type="button" aria-label="前の月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></button><button class="today-button" id="calendar-today" type="button">今日</button><button id="calendar-next" type="button" aria-label="次の月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
+          <div class="calendar-weekdays" aria-hidden="true"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+          <div class="calendar-days" id="calendar-days" role="grid"></div>
+        </div>
+        <h3 class="calendar-detail-title" id="calendar-detail-title">選択した日の予定</h3>
+        <div class="tabs" role="tablist"><button class="tab active" data-filter="upcoming" role="tab" aria-selected="true">これから <b id="upcoming-count">0</b></button><button class="tab" data-filter="done" role="tab" aria-selected="false">終了・通知済み <b id="done-count">0</b></button></div>
+        <div class="items" id="items"></div>
+        <div class="footer">このページを開いている間、指定した時刻に通知します。予定はこのブラウザに保存されます。</div>
+      </section>
+    </div>
+    </section>
+    <section class="app-view" id="page-friends" hidden>
+      <div class="view-intro"><div class="eyebrow">YOUR PEOPLE</div><h1>フレンド</h1><p>ユーザー名を検索して、予定を共有する相手を登録します。</p></div>
+      <div class="social-layout">
+        <section class="panel"><h2>ユーザーを探す</h2><form id="friend-search-form" class="search-field"><input id="friend-query" type="search" placeholder="ユーザー名で検索（2文字以上）" autocomplete="off" aria-label="ユーザー名で検索"><button class="small-action" type="submit">検索</button></form><div class="people-list" id="search-results" aria-live="polite"></div><p class="panel-note">このアプリに登録したユーザーを検索できます。</p></section>
+        <section class="panel"><h2>登録したフレンド</h2><div class="people-list" id="friend-list"></div></section>
+      </div>
+      <p class="demo-notice">このアプリのサーバーに登録済みのユーザーを検索します。アカウントとフレンド情報はユーザーごとに保存されます。</p>
+    </section>
+    <section class="app-view" id="page-rooms" hidden>
+      <div class="view-intro"><div class="eyebrow">PLANS TOGETHER</div><h1>ルーム</h1><p>共有するフレンドと期間を決めて、予定をひとつの場所にまとめます。</p></div>
+      <div class="social-layout">
+        <form class="panel room-form" id="room-form"><h2>ルームを作成</h2><div class="field"><label for="room-name">ルーム名</label><input id="room-name" maxlength="40" placeholder="例：週末のおでかけ" required></div><div class="field"><label for="room-password">共有パスワード</label><input id="room-password" type="password" minlength="4" maxlength="40" placeholder="4文字以上" required></div><div class="field"><label for="room-start">共有する期間</label><input id="room-start" type="date" required></div><div class="field"><label for="room-end">終了日</label><input id="room-end" type="date" required></div><div class="field"><label>参加するフレンド</label><div class="friend-picker" id="friend-picker"></div></div><button class="submit" type="submit">ルームを作成する</button></form>
+        <section class="panel"><h2>作成したルーム</h2><div class="room-list" id="room-list"></div></section>
+      </div>
+      <p class="demo-notice">ルーム参加者は共通の時間軸で期間内の予定を確認できます。予定を開くにはルームのパスワードが必要です。</p>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script>
+    const form = document.querySelector('#reminder-form');
+    const dateInput = document.querySelector('#datetime');
+    const items = document.querySelector('#items');
+    const toast = document.querySelector('#toast');
+    let reminders = [];
+    let filter = 'upcoming';
+    let reminderKind = 'event';
+    let selectedDateKey = localDateTime(new Date()).slice(0, 10);
+    let displayedMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    let toastTimer;
+    let friends = [];
+    let rooms = [];
+    let unlockedRooms = {};
+    let currentUser = null;
+    let saveQueue = Promise.resolve();
+    function createId() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
+    async function api(path, options = {}) {
+      const response = await fetch(path, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+      if (!response.headers.get('Content-Type')?.includes('application/json')) throw new Error('api_unavailable');
+      const payload = await response.json().catch(() => ({}));
+      if (response.status === 404) throw new Error('api_unavailable');
+      if (!response.ok) throw new Error(payload.error || 'request_failed');
+      return payload;
+    }
+    async function loadAccountData() {
+      const [storedReminders, storedFriends, storedRooms] = await Promise.all([api('/api/reminders'), api('/api/friends'), api('/api/rooms')]);
+      reminders = storedReminders.reminders;
+      friends = storedFriends.friends;
+      rooms = storedRooms.rooms;
+      unlockedRooms = {};
+    }
+    function saveRooms() { return Promise.resolve(); }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+    }
+
+    function save() {
+      const snapshot = JSON.stringify(reminders);
+      saveQueue = saveQueue.catch(() => {}).then(() => api('/api/reminders', { method: 'PUT', body: JSON.stringify({ reminders: JSON.parse(snapshot) }) })).catch(error => showToast('予定を保存できません', error.message));
+      return saveQueue;
+    }
+    function localDateTime(date) {
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 16);
+    }
+    function scheduleStart(item) { return item.startAt || item.at; }
+    function scheduleEnd(item) { return item.endAt || item.at; }
+    function setDefaultDate() {
+      const next = new Date(Date.now() + 60 * 60 * 1000);
+      next.setMinutes(Math.ceil(next.getMinutes() / 5) * 5, 0, 0);
+      dateInput.value = localDateTime(next);
+      dateInput.min = localDateTime(new Date());
+      document.querySelector('#event-start').value = localDateTime(next);
+      document.querySelector('#event-end').value = localDateTime(new Date(next.getTime() + 60 * 60 * 1000));
+      document.querySelector('#event-start').min = localDateTime(new Date());
+      document.querySelector('#event-end').min = localDateTime(next);
+    }
+    function showToast(title, message) {
+      toast.innerHTML = `<strong></strong><span></span>`;
+      toast.querySelector('strong').textContent = title;
+      toast.querySelector('span').textContent = message || '予定の時刻になりました';
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.hidden = true; }, 7000);
+    }
+    function dateKey(date) { return localDateTime(date).slice(0, 10); }
+    function renderCalendar() {
+      const year = displayedMonth.getFullYear();
+      const month = displayedMonth.getMonth();
+      document.querySelector('#calendar-month').textContent = displayedMonth.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' });
+      const firstDay = new Date(year, month, 1);
+      const gridStart = new Date(year, month, 1 - firstDay.getDay());
+      const dayContainer = document.querySelector('#calendar-days');
+      dayContainer.innerHTML = Array.from({ length: 42 }, (_, index) => {
+        const day = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + index);
+        const key = dateKey(day);
+        const count = reminders.filter(item => dateKey(new Date(scheduleStart(item))) === key).length;
+        const classes = ['calendar-day', day.getMonth() !== month ? 'outside' : '', key === selectedDateKey ? 'selected' : '', key === dateKey(new Date()) ? 'today' : ''].filter(Boolean).join(' ');
+        return `<button type="button" class="${classes}" data-date="${key}" role="gridcell" aria-pressed="${key === selectedDateKey}" aria-label="${day.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}${count ? `、予定${count}件` : ''}"><span>${day.getDate()}</span>${count ? `<i class="day-count" aria-hidden="true"></i>` : '<i aria-hidden="true"></i>'}</button>`;
+      }).join('');
+    }
+    function render() {
+      const selectedDate = selectedDateKey;
+      const dayItems = reminders.filter(item => dateKey(new Date(scheduleStart(item))) === selectedDate);
+      const upcoming = dayItems.filter(item => !item.sent && !(item.kind !== 'entry' && new Date(scheduleEnd(item)).getTime() <= Date.now())).sort((a, b) => new Date(scheduleStart(a)) - new Date(scheduleStart(b)));
+      const done = dayItems.filter(item => item.sent || (item.kind !== 'entry' && new Date(scheduleEnd(item)).getTime() <= Date.now())).sort((a, b) => new Date(scheduleStart(a)) - new Date(scheduleStart(b)));
+      document.querySelector('#upcoming-count').textContent = upcoming.length;
+      document.querySelector('#done-count').textContent = done.length;
+      document.querySelector('#count').textContent = `${selectedDate} · ${dayItems.length} 件`;
+      document.querySelector('#calendar-detail-title').textContent = `${new Date(`${selectedDate}T12:00:00`).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'long' })} の予定`;
+      renderCalendar();
+      const visible = filter === 'upcoming' ? upcoming : done;
+      if (!visible.length) {
+        items.innerHTML = `<div class="empty"><div class="empty-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></div><p>${filter === 'upcoming' ? 'この日の予定はありません' : 'この日にお知らせ済みの予定はありません'}</p><small>日付を変えるか、左のフォームから予定を追加してください。</small></div>`;
+        return;
+      }
+      items.innerHTML = visible.map(item => {
+        const date = new Date(scheduleStart(item));
+        const endDate = new Date(scheduleEnd(item));
+        const dateLabel = date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+        const timeLabel = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const endLabel = endDate.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const isEntryReminder = item.kind === 'entry';
+        const notifyEnabled = item.notify ?? !item.startAt;
+        return `<article class="reminder"><div class="timebox"><strong>${timeLabel}</strong><small>${dateLabel}</small></div><div><h3 class="item-title"></h3><p class="item-message"></p>${isEntryReminder ? '' : `<div class="event-range">${timeLabel} 〜 ${endLabel}</div>`}<div class="item-meta">${isEntryReminder ? '予定入力リマインド' : '予定'} · ${item.sent ? '通知済み' : !isEntryReminder && endDate.getTime() <= Date.now() ? '終了' : '登録済み'}</div>${isEntryReminder ? '' : `<label class="notify-toggle"><input type="checkbox" data-notify-id="${item.id}" ${notifyEnabled ? 'checked' : ''} ${item.sent || date.getTime() <= Date.now() ? 'disabled' : ''}>通知する</label>`}</div><button class="remove" type="button" data-id="${item.id}" aria-label="予定を削除" title="削除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg></button></article>`;
+      }).join('');
+      [...items.querySelectorAll('.reminder')].forEach((row, index) => {
+        row.querySelector('.item-title').textContent = visible[index].title;
+        row.querySelector('.item-message').textContent = visible[index].message;
+      });
+    }
+    function checkDue() {
+      const now = Date.now();
+      let changed = false;
+      for (const item of reminders) {
+        const shouldNotify = item.kind === 'entry' || item.notify === true || (!item.startAt && item.notify === undefined);
+        if (!item.sent && shouldNotify && new Date(scheduleStart(item)).getTime() <= now) {
+          item.sent = true;
+          changed = true;
+          const notificationMessage = item.kind === 'entry' ? `予定を入力する時間です${item.message ? `: ${item.message}` : ''}` : item.message || '予定の時刻になりました';
+          showToast(item.kind === 'entry' ? '予定入力のリマインド' : item.title, item.kind === 'entry' ? `${item.title} · ${notificationMessage}` : notificationMessage);
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(item.kind === 'entry' ? '予定を入力する時間です' : item.title, { body: item.kind === 'entry' ? `${item.title}${item.message ? `: ${item.message}` : ''}` : item.message || '予定の時刻になりました' });
+          }
+        }
+      }
+      if (changed) { save(); render(); }
+    }
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      const startInput = document.querySelector('#event-start');
+      const endInput = document.querySelector('#event-end');
+      const startAt = reminderKind === 'entry' ? new Date(dateInput.value) : new Date(startInput.value);
+      const endAt = reminderKind === 'entry' ? null : new Date(endInput.value);
+      if (Number.isNaN(startAt.getTime()) || startAt.getTime() <= Date.now()) {
+        const input = reminderKind === 'entry' ? dateInput : startInput;
+        input.setCustomValidity('現在より後の日時を選んでください');
+        input.reportValidity();
+        return;
+      }
+      if (endAt && (Number.isNaN(endAt.getTime()) || endAt <= startAt)) {
+        endInput.setCustomValidity('終了日時は開始日時より後にしてください');
+        endInput.reportValidity();
+        return;
+      }
+      dateInput.setCustomValidity('');
+      startInput.setCustomValidity('');
+      endInput.setCustomValidity('');
+      reminders.push({ id: createId(), kind: reminderKind, title: form.title.value.trim(), message: form.message.value.trim(), at: startAt.toISOString(), startAt: reminderKind === 'entry' ? undefined : startAt.toISOString(), endAt: endAt?.toISOString(), startDay: reminderKind === 'entry' ? undefined : dateKey(startAt), endDay: endAt ? dateKey(endAt) : undefined, notify: false, sent: false });
+      if (reminderKind !== 'entry') {
+        selectedDateKey = dateKey(startAt);
+        displayedMonth = new Date(startAt.getFullYear(), startAt.getMonth(), 1);
+      }
+      save(); render();
+      form.reset(); setDefaultDate(); document.querySelector('#title').focus();
+      showToast(reminderKind === 'entry' ? '入力リマインドをセットしました' : '予定を登録しました', reminderKind === 'entry' ? '指定した時刻に予定入力をお知らせします' : '予定カードから通知のオン・オフを選べます');
+    });
+    [dateInput, document.querySelector('#event-start'), document.querySelector('#event-end')].forEach(input => input.addEventListener('input', () => input.setCustomValidity('')));
+    document.querySelectorAll('[data-kind]').forEach(button => button.addEventListener('click', () => {
+      reminderKind = button.dataset.kind;
+      document.querySelectorAll('[data-kind]').forEach(option => {
+        const active = option === button;
+        option.classList.toggle('active', active);
+        option.setAttribute('aria-pressed', String(active));
+      });
+      const isEntryReminder = reminderKind === 'entry';
+      document.querySelector('#title-label').textContent = isEntryReminder ? '入力する予定' : '予定名';
+      document.querySelector('#title').placeholder = isEntryReminder ? '例：来週の会議予定を入力する' : '例：薬を飲む';
+      document.querySelector('#message').placeholder = isEntryReminder ? '予定を入力するときのメモ' : '忘れずにやることを書いておく';
+      document.querySelector('#event-times').hidden = isEntryReminder;
+      document.querySelector('#entry-time').hidden = !isEntryReminder;
+      startModeFields(isEntryReminder);
+      document.querySelector('#submit-label').textContent = isEntryReminder ? '入力リマインドを登録する' : '予定を登録する';
+    }));
+    function startModeFields(isEntryReminder) {
+      const startInput = document.querySelector('#event-start');
+      const endInput = document.querySelector('#event-end');
+      startInput.disabled = isEntryReminder;
+      endInput.disabled = isEntryReminder;
+      startInput.required = !isEntryReminder;
+      endInput.required = !isEntryReminder;
+      dateInput.disabled = !isEntryReminder;
+      dateInput.required = isEntryReminder;
+    }
+    document.querySelectorAll('[data-minutes]').forEach(button => button.addEventListener('click', () => {
+      const date = new Date(Date.now() + Number(button.dataset.minutes) * 60000);
+      dateInput.value = localDateTime(date); dateInput.focus();
+    }));
+    document.querySelectorAll('.tabs [data-filter]').forEach(button => button.addEventListener('click', () => {
+      filter = button.dataset.filter;
+      document.querySelectorAll('.tab').forEach(tab => { const active = tab === button; tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); });
+      render();
+    }));
+    items.addEventListener('click', event => {
+      const button = event.target.closest('[data-id]');
+      if (!button) return;
+      reminders = reminders.filter(item => item.id !== button.dataset.id);
+      save(); render();
+    });
+    items.addEventListener('change', event => {
+      const toggle = event.target.closest('[data-notify-id]');
+      if (!toggle) return;
+      const item = reminders.find(reminder => reminder.id === toggle.dataset.notifyId);
+      if (!item) return;
+      item.notify = toggle.checked;
+      save(); render();
+      if (item.notify) showToast('予定の通知をオンにしました', '開始時刻にお知らせします');
+    });
+    document.querySelector('#calendar-days').addEventListener('click', event => {
+      const dayButton = event.target.closest('[data-date]');
+      if (!dayButton) return;
+      selectedDateKey = dayButton.dataset.date;
+      const [year, month] = selectedDateKey.split('-').map(Number);
+      displayedMonth = new Date(year, month - 1, 1);
+      render();
+    });
+    document.querySelector('#calendar-prev').addEventListener('click', () => {
+      displayedMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() - 1, 1);
+      if (selectedDateKey.slice(0, 7) !== `${displayedMonth.getFullYear()}-${String(displayedMonth.getMonth() + 1).padStart(2, '0')}`) selectedDateKey = dateKey(displayedMonth);
+      render();
+    });
+    document.querySelector('#calendar-next').addEventListener('click', () => {
+      displayedMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + 1, 1);
+      if (selectedDateKey.slice(0, 7) !== `${displayedMonth.getFullYear()}-${String(displayedMonth.getMonth() + 1).padStart(2, '0')}`) selectedDateKey = dateKey(displayedMonth);
+      render();
+    });
+    document.querySelector('#calendar-today').addEventListener('click', () => {
+      const today = new Date();
+      selectedDateKey = dateKey(today);
+      displayedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      render();
+    });
+    document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('[data-page]').forEach(navButton => navButton.classList.toggle('active', navButton === button));
+      document.querySelectorAll('.app-view').forEach(view => { view.hidden = view.id !== `page-${button.dataset.page}`; });
+      if (button.dataset.page === 'friends') renderFriends();
+      if (button.dataset.page === 'rooms') { renderFriendPicker(); renderRooms(); }
+    }));
+    function renderFriends(results = null) {
+      const list = document.querySelector('#friend-list');
+      list.innerHTML = friends.length ? friends.map(user => {
+        return `<div class="person-row"><div class="person-info"><span class="avatar">${escapeHtml(user.username.slice(0, 1).toUpperCase())}</span><div><div class="person-name">${escapeHtml(user.username)}</div><div class="person-handle">@${escapeHtml(user.username)}</div></div></div><button type="button" data-remove-friend="${escapeHtml(user.username)}" aria-label="${escapeHtml(user.username)}を削除">削除</button></div>`;
+      }).join('') : '<div class="empty-inline">まだフレンドはいません</div>';
+      const resultList = document.querySelector('#search-results');
+      if (results === null) { resultList.innerHTML = '<div class="empty-inline">ユーザー名を入力して検索してください</div>'; return; }
+      resultList.innerHTML = results.length ? results.map(user => {
+        const isFriend = friends.some(friend => friend.username === user.username);
+        return `<div class="person-row"><div class="person-info"><span class="avatar">${escapeHtml(user.username.slice(0, 1).toUpperCase())}</span><div><div class="person-name">${escapeHtml(user.username)}</div><div class="person-handle">@${escapeHtml(user.username)}</div></div></div><button type="button" data-add-friend="${escapeHtml(user.username)}" ${isFriend ? 'disabled' : ''}>${isFriend ? '登録済み' : '追加'}</button></div>`;
+      }).join('') : '<div class="empty-inline">該当するユーザーが見つかりません</div>';
+    }
+    document.querySelector('#friend-search-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const query = document.querySelector('#friend-query').value.trim().replace(/^@/, '').toLowerCase();
+      if (query.length < 2) { renderFriends([]); return; }
+      try {
+        const response = await api(`/api/users?q=${encodeURIComponent(query)}`);
+        renderFriends(response.users);
+      } catch (error) { showToast('ユーザーを検索できません', error.message); }
+    });
+    document.querySelector('#search-results').addEventListener('click', async event => {
+      const button = event.target.closest('[data-add-friend]');
+      if (!button || friends.some(friend => friend.username === button.dataset.addFriend)) return;
+      try {
+        const added = await api('/api/friends', { method: 'POST', body: JSON.stringify({ username: button.dataset.addFriend }) });
+        friends.push(added);
+      } catch (error) { showToast('フレンドを追加できません', error.message); return; }
+      const query = document.querySelector('#friend-query').value.trim().replace(/^@/, '').toLowerCase();
+      const response = await api(`/api/users?q=${encodeURIComponent(query)}`);
+      renderFriends(response.users);
+      renderFriendPicker();
+    });
+    document.querySelector('#friend-list').addEventListener('click', async event => {
+      const button = event.target.closest('[data-remove-friend]');
+      if (!button) return;
+      await api('/api/friends', { method: 'DELETE', body: JSON.stringify({ username: button.dataset.removeFriend }) });
+      friends = friends.filter(friend => friend.username !== button.dataset.removeFriend);
+      renderFriends(); renderFriendPicker();
+    });
+    function renderFriendPicker() {
+      const picker = document.querySelector('#friend-picker');
+      picker.innerHTML = friends.length ? friends.map(user => {
+        return `<label><input type="checkbox" name="room-members" value="${escapeHtml(user.username)}"> @${escapeHtml(user.username)}</label>`;
+      }).join('') : '<span class="panel-note">先にフレンドを登録してください。</span>';
+    }
+    function hashPassword(salt, password) {
+      const value = `${salt}:${password}`;
+      if (crypto.subtle) return crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)).then(buffer => Array.from(new Uint8Array(buffer), byte => byte.toString(16).padStart(2, '0')).join(''));
+      let hash = 2166136261;
+      for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+      }
+      return Promise.resolve((hash >>> 0).toString(16).padStart(8, '0'));
+    }
+    function renderRooms() {
+      const list = document.querySelector('#room-list');
+      list.innerHTML = rooms.length ? rooms.map(room => {
+        const memberNames = room.members || [];
+        const unlocked = unlockedRooms[room.id];
+        return `<article class="room-card"><div class="room-card-head"><div><div class="room-title">${escapeHtml(room.name)}</div><div class="room-sub">${room.start} 〜 ${room.end}</div></div>${unlocked ? `<button type="button" data-lock-room="${escapeHtml(room.id)}">ロック</button>` : `<form class="room-access" data-room-id="${escapeHtml(room.id)}" style="display:flex;gap:6px"><input name="password" type="password" required autocomplete="current-password" placeholder="パスワード" aria-label="ルームのパスワード" style="width:112px;min-width:0;border:1px solid #d9ddd5;border-radius:5px;padding:7px 8px;font-size:11px"><button type="submit">予定を見る</button></form>`}</div><div class="room-members">参加者: ${memberNames.map(name => `@${escapeHtml(name)}`).join('、')}</div>${unlocked ? renderRoomTimeline(unlocked) : ''}</article>`;
+      }).join('') : '<div class="empty-inline">作成したルームはまだありません</div>';
+    }
+    function renderRoomTimeline(data) {
+      const members = data.schedules;
+      const start = new Date(`${data.room.start}T12:00:00`);
+      const end = new Date(`${data.room.end}T12:00:00`);
+      const days = [];
+      for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) days.push(dateKey(day));
+      return `<div class="shared-timeline">${days.map(day => {
+        const dayLabel = new Date(`${day}T12:00:00`).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+        const memberTracks = members.map(member => {
+          const events = member.reminders.filter(item => {
+            const eventStart = dateKey(new Date(item.startAt || item.at));
+            const eventEnd = dateKey(new Date(item.endAt || item.at));
+            return eventStart <= day && eventEnd >= day;
+          }).map(item => {
+            const eventStart = new Date(item.startAt || item.at);
+            const eventEnd = new Date(item.endAt || item.at);
+            const startMinute = dateKey(eventStart) < day ? 0 : eventStart.getHours() * 60 + eventStart.getMinutes();
+            const endMinute = dateKey(eventEnd) > day ? 1440 : eventEnd.getHours() * 60 + eventEnd.getMinutes();
+            return { item, startMinute, endMinute: Math.max(endMinute, startMinute + 20) };
+          }).sort((a, b) => a.startMinute - b.startMinute);
+          const laneEnds = [];
+          events.forEach(event => {
+            let lane = laneEnds.findIndex(endMinute => endMinute <= event.startMinute);
+            if (lane < 0) lane = laneEnds.length;
+            laneEnds[lane] = event.endMinute;
+            event.lane = lane;
+          });
+          const laneCount = Math.max(laneEnds.length, 1);
+          const blocks = events.map(event => {
+            const top = event.startMinute / 1440 * 960;
+            const height = Math.max((event.endMinute - event.startMinute) / 1440 * 960, 24);
+            const startTime = event.startMinute === 0 ? '00:00' : `${String(Math.floor(event.startMinute / 60)).padStart(2, '0')}:${String(event.startMinute % 60).padStart(2, '0')}`;
+            const endTime = event.endMinute === 1440 ? '24:00' : `${String(Math.floor(event.endMinute / 60)).padStart(2, '0')}:${String(event.endMinute % 60).padStart(2, '0')}`;
+            return `<div class="timeline-event" title="${escapeHtml(event.item.title)} · ${startTime}〜${endTime}" style="top:${top}px;height:${height}px;left:${event.lane / laneCount * 100}%;width:${100 / laneCount}%"><strong>${escapeHtml(event.item.title)}</strong><small>${startTime}–${endTime}</small></div>`;
+          }).join('');
+          return `<div class="timeline-member-track">${blocks || '<span class="timeline-empty">予定なし</span>'}</div>`;
+        }).join('');
+        const timeLabels = Array.from({ length: 24 }, (_, hour) => `<span style="top:${hour * 40}px">${String(hour).padStart(2, '0')}:00</span>`).join('');
+        return `<section class="timeline-day"><h3>${dayLabel}</h3><div class="timeline-scroll"><div class="timeline-board" style="--member-count:${Math.max(members.length, 1)}"><div class="timeline-head"><div class="timeline-time-spacer"></div>${members.map(member => `<div class="timeline-head-member">@${escapeHtml(member.username)}</div>`).join('')}</div><div class="timeline-body"><div class="timeline-time-axis">${timeLabels}</div>${memberTracks || '<div class="timeline-no-members">参加者がいません</div>'}</div></div></div></section>`;
+      }).join('')}</div>`;
+    }
+    document.querySelector('#room-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const start = document.querySelector('#room-start').value;
+      const end = document.querySelector('#room-end').value;
+      if (end < start) { showToast('期間を確認してください', '終了日は開始日以降に設定してください'); return; }
+      const password = document.querySelector('#room-password').value;
+      const salt = createId();
+      try {
+        const room = await api('/api/rooms', { method: 'POST', body: JSON.stringify({ id: createId(), name: document.querySelector('#room-name').value.trim(), start, end, members: [...document.querySelectorAll('[name="room-members"]:checked')].map(input => input.value), password }) });
+        rooms.unshift(room); event.target.reset(); renderRooms();
+        showToast('ルームを作成しました', '参加ユーザーの予定をパスワードで確認できます');
+      } catch (error) {
+        showToast('ルームを作成できません', error.message === 'room_member_must_be_friend' ? '参加者をフレンド登録してから作成してください' : error.message);
+      }
+    });
+    document.querySelector('#room-list').addEventListener('submit', async event => {
+      const accessForm = event.target.closest('.room-access');
+      if (!accessForm) return;
+      event.preventDefault();
+      const password = new FormData(accessForm).get('password');
+      try {
+        const roomData = await api(`/api/rooms/${encodeURIComponent(accessForm.dataset.roomId)}/unlock`, { method: 'PATCH', body: JSON.stringify({ password }) });
+        unlockedRooms[roomData.room.id] = roomData;
+        renderRooms();
+      } catch (error) {
+        accessForm.reset();
+        showToast(error.message === 'wrong_room_password' ? 'パスワードが違います' : 'ルームを開けません', error.message === 'wrong_room_password' ? '設定したパスワードを入力してください' : error.message);
+      }
+    });
+    document.querySelector('#room-list').addEventListener('click', event => {
+      const button = event.target.closest('[data-lock-room]');
+      if (!button) return;
+      delete unlockedRooms[button.dataset.lockRoom];
+      renderRooms();
+    });
+    const permission = document.querySelector('#permission');
+    const permissionText = document.querySelector('#permission-text');
+    const enableButton = document.querySelector('#enable-button');
+    function updatePermission() {
+      if (!('Notification' in window)) {
+        permissionText.textContent = 'このブラウザはデスクトップ通知に未対応'; enableButton.hidden = true; return;
+      }
+      if (Notification.permission === 'granted') {
+        permission.classList.add('ready'); permissionText.textContent = 'デスクトップ通知が有効です'; enableButton.hidden = true;
+      } else if (Notification.permission === 'denied') {
+        permissionText.textContent = '通知はアプリ内でお知らせ'; enableButton.textContent = 'ブラウザ設定を確認';
+      }
+    }
+    enableButton.addEventListener('click', async () => {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'denied') { showToast('通知がブロックされています', 'ブラウザのサイト設定から許可してください'); return; }
+      await Notification.requestPermission(); updatePermission();
+    });
+    const authForm = document.querySelector('#auth-form');
+    const authError = document.querySelector('#auth-error');
+    const authModeButtons = document.querySelectorAll('[data-auth-mode]');
+    let authMode = 'login';
+    function setAuthMode(mode) {
+      authMode = mode;
+      authModeButtons.forEach(button => button.classList.toggle('active', button.dataset.authMode === mode));
+      const signup = mode === 'signup';
+      document.querySelector('#auth-title').textContent = signup ? 'アカウント作成' : 'ログイン';
+      document.querySelector('#auth-lead').textContent = signup ? 'ユーザー名とパスワードを設定してください。' : 'アカウントにログインしてください。';
+      document.querySelector('#auth-submit').textContent = signup ? 'アカウントを作成' : 'ログイン';
+      document.querySelector('#auth-password').autocomplete = signup ? 'new-password' : 'current-password';
+      document.querySelector('#auth-password').placeholder = signup ? '8文字以上' : 'パスワード';
+      authError.textContent = '';
+    }
+    function authErrorMessage(error) {
+      if (location.protocol === 'file:') return 'index.htmlをファイルから直接開いています。ログインにはサーバーが必要です。python3 server.py を起動して、http://localhost:8000 から開いてください。';
+      return ({ username_taken: 'このユーザー名はすでに使われています。', invalid_login: 'ユーザー名またはパスワードが違います。アカウントがなければ「新規登録」を選んでください。', invalid_credentials: 'ユーザー名は半角英数字と_の3〜24文字、パスワードは8文字以上にしてください。', login_required: 'ログインしてください。', api_unavailable: 'このURLにはアプリのAPIサーバーがありません。Macで python3 server.py を起動し、http://localhost:8000 で開いてください。Teamsなどの公開URLで使うには、PythonサーバーもHTTPS環境へ公開する必要があります。' })[error] || 'サーバーに接続できません。Macで python3 server.py が起動中か確認してください。';
+    }
+    async function openApp(user) {
+      currentUser = user;
+      authError.textContent = '';
+      try {
+        await loadAccountData();
+      } catch (error) {
+        currentUser = null;
+        authError.textContent = authErrorMessage(error.message);
+        return;
+      }
+      document.querySelector('#signed-in-user').textContent = `@${user.username}`;
+      document.querySelector('#auth-screen').hidden = true;
+      document.querySelector('#app-shell').hidden = false;
+      render(); checkDue();
+    }
+    authModeButtons.forEach(button => button.addEventListener('click', () => setAuthMode(button.dataset.authMode)));
+    if (location.protocol === 'file:') {
+      authError.textContent = authErrorMessage('file_origin');
+      document.querySelector('#local-server-link').hidden = false;
+    }
+    authForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      authError.textContent = '';
+      const username = authForm.username.value.trim().toLowerCase();
+      const password = authForm.password.value;
+      try {
+        const user = await api(authMode === 'signup' ? '/api/register' : '/api/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+        authForm.reset();
+        await openApp(user);
+      } catch (error) { authError.textContent = authErrorMessage(error.message); }
+    });
+    document.querySelector('#logout-button').addEventListener('click', async () => {
+      await saveQueue;
+      try { await api('/api/logout', { method: 'POST', body: '{}' }); } catch {}
+      currentUser = null; reminders = []; friends = []; rooms = [];
+      document.querySelector('#app-shell').hidden = true;
+      document.querySelector('#auth-screen').hidden = false;
+      authForm.reset(); setAuthMode('login');
+    });
+    api('/api/session').then(session => session.user && openApp(session.user)).catch(() => {});
+    document.querySelector('#today').textContent = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    setDefaultDate(); updatePermission(); setInterval(() => { if (currentUser) checkDue(); }, 1000);
+  </script>
+</body>
+</html>
