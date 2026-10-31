@@ -23,7 +23,8 @@
     @media(max-width:480px){.auth-screen{padding:16px}.auth-panel{padding:23px 20px}.auth-panel h1{font-size:24px}.session-tools{gap:6px}.session-tools span{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.session-tools button{padding:7px}}
     .notify-toggle{display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:#52675b;font-size:11px}.notify-toggle input{width:16px;height:16px;margin:0;accent-color:var(--green)}.event-range{font-size:10px;color:#68756d;margin-top:4px}
     .shared-timeline{width:100%;min-width:0;max-width:100%;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.timeline-day{min-width:0;max-width:100%;margin:0 0 20px}.timeline-day h3{margin:0 0 9px;font-size:13px;font-weight:700}.timeline-scroll{width:100%;min-width:0;max-width:100%;overflow:auto;border:1px solid var(--line);border-radius:6px;background:#fffefa}.timeline-board{min-width:calc(46px + var(--member-count) * 145px)}.timeline-head,.timeline-body{display:grid;grid-template-columns:46px repeat(var(--member-count),minmax(145px,1fr))}.timeline-head{position:sticky;top:0;z-index:2;background:#edf1e9;border-bottom:1px solid var(--line)}.timeline-head-member{padding:10px 7px;text-align:center;border-left:1px solid var(--line);font-size:11px;font-weight:700;color:var(--green);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.timeline-time-spacer{border-right:1px solid var(--line)}.timeline-body{height:960px}.timeline-time-axis{position:relative;height:960px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,#e3e7df 39px,#e3e7df 40px);font-size:10px;color:#859087}.timeline-time-axis span{position:absolute;left:4px;transform:translateY(-50%);background:#fffefa;padding-right:2px}.timeline-member-track{position:relative;height:960px;border-left:1px solid var(--line);background:repeating-linear-gradient(to bottom,transparent 0,transparent 39px,#e3e7df 39px,#e3e7df 40px)}.timeline-event{position:absolute;box-sizing:border-box;overflow:hidden;padding:4px 5px;border-left:3px solid var(--green);border-radius:3px;background:#e6efe7;color:#294a3d;font-size:10px;z-index:1}.timeline-event strong,.timeline-event small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.timeline-event small{margin-top:2px;color:#65786c;font-size:9px}.timeline-empty{position:absolute;top:12px;left:0;right:0;text-align:center;color:#a0a9a0;font-size:11px}.timeline-no-members{grid-column:2/-1;padding:20px;color:#859087;font-size:12px}.room-card{min-width:0}.room-access input:focus{outline:2px solid rgba(49,93,80,.2);outline-offset:1px}
-    @media(max-width:760px){.timeline-board{min-width:calc(42px + var(--member-count) * 130px)}.timeline-head,.timeline-body{grid-template-columns:42px repeat(var(--member-count),minmax(130px,1fr))}.timeline-time-axis,.timeline-member-track,.timeline-body{height:960px}.timeline-time-axis,.timeline-member-track{background-size:100% 40px}.timeline-event{font-size:9px;padding:3px}.timeline-head-member{font-size:10px}}
+    .timeline-day-nav{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:8px;margin-bottom:10px}.timeline-day-nav h3{margin:0;text-align:center;font-size:13px;font-weight:700}.timeline-day-nav button{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--green)}.timeline-day-nav button:hover:not(:disabled){background:#e9eee7}.timeline-day-nav button:disabled{opacity:.35;cursor:default}.timeline-day-nav svg{width:16px}.shared-timeline>.timeline-scroll{margin-bottom:20px}
+    @media(max-width:760px){.timeline-board{min-width:calc(42px + var(--member-count) * 130px)}.timeline-head,.timeline-body{grid-template-columns:42px repeat(var(--member-count),minmax(130px,1fr))}.timeline-time-axis,.timeline-member-track,.timeline-body{height:960px}.timeline-time-axis,.timeline-member-track{background-size:100% 40px}.timeline-event{font-size:9px;padding:3px}.timeline-head-member{font-size:10px}.timeline-day-nav{grid-template-columns:40px 1fr 40px}.timeline-day-nav button{width:38px;height:38px}}
   </style>
 </head>
 <body>
@@ -394,12 +395,10 @@
     }
     function renderRoomTimeline(data) {
       const members = data.schedules;
-      const start = new Date(`${data.room.start}T12:00:00`);
-      const end = new Date(`${data.room.end}T12:00:00`);
-      const days = [];
-      for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) days.push(dateKey(day));
-      return `<div class="shared-timeline">${days.map(day => {
-        const dayLabel = new Date(`${day}T12:00:00`).toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
+      const start = data.room.start;
+      const end = data.room.end;
+      const day = data.selectedDay && data.selectedDay >= start && data.selectedDay <= end ? data.selectedDay : start;
+      const dayLabel = new Date(`${day}T12:00:00`).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
         const memberTracks = members.map(member => {
           const events = member.reminders.filter(item => {
             const eventStart = dateKey(new Date(item.startAt || item.at));
@@ -430,8 +429,7 @@
           return `<div class="timeline-member-track">${blocks || '<span class="timeline-empty">予定なし</span>'}</div>`;
         }).join('');
         const timeLabels = Array.from({ length: 24 }, (_, hour) => `<span style="top:${hour * 40}px">${String(hour).padStart(2, '0')}:00</span>`).join('');
-        return `<section class="timeline-day"><h3>${dayLabel}</h3><div class="timeline-scroll"><div class="timeline-board" style="--member-count:${Math.max(members.length, 1)}"><div class="timeline-head"><div class="timeline-time-spacer"></div>${members.map(member => `<div class="timeline-head-member">@${escapeHtml(member.username)}</div>`).join('')}</div><div class="timeline-body"><div class="timeline-time-axis">${timeLabels}</div>${memberTracks || '<div class="timeline-no-members">参加者がいません</div>'}</div></div></div></section>`;
-      }).join('')}</div>`;
+      return `<div class="shared-timeline"><div class="timeline-day-nav"><button type="button" data-room-day="${escapeHtml(data.room.id)}" data-direction="-1" aria-label="前の日" ${day <= start ? 'disabled' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg></button><h3>${dayLabel}</h3><button type="button" data-room-day="${escapeHtml(data.room.id)}" data-direction="1" aria-label="次の日" ${day >= end ? 'disabled' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button></div><div class="timeline-scroll"><div class="timeline-board" style="--member-count:${Math.max(members.length, 1)}"><div class="timeline-head"><div class="timeline-time-spacer"></div>${members.map(member => `<div class="timeline-head-member">@${escapeHtml(member.username)}</div>`).join('')}</div><div class="timeline-body"><div class="timeline-time-axis">${timeLabels}</div>${memberTracks || '<div class="timeline-no-members">参加者がいません</div>'}</div></div></div></div>`;
     }
     document.querySelector('#room-form').addEventListener('submit', async event => {
       event.preventDefault();
@@ -463,6 +461,19 @@
       }
     });
     document.querySelector('#room-list').addEventListener('click', event => {
+      const dayButton = event.target.closest('[data-room-day]');
+      if (dayButton) {
+        const roomData = unlockedRooms[dayButton.dataset.roomDay];
+        if (!roomData) return;
+        const base = new Date(`${roomData.selectedDay || roomData.room.start}T12:00:00`);
+        base.setDate(base.getDate() + Number(dayButton.dataset.direction));
+        const selectedDay = dateKey(base);
+        if (selectedDay >= roomData.room.start && selectedDay <= roomData.room.end) {
+          roomData.selectedDay = selectedDay;
+          renderRooms();
+        }
+        return;
+      }
       const button = event.target.closest('[data-lock-room]');
       if (!button) return;
       delete unlockedRooms[button.dataset.lockRoom];
