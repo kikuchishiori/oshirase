@@ -27,6 +27,7 @@
     @media(max-width:760px){.timeline-board{min-width:calc(42px + var(--member-count) * 130px)}.timeline-head,.timeline-body{grid-template-columns:42px repeat(var(--member-count),minmax(130px,1fr))}.timeline-time-axis,.timeline-member-track,.timeline-body{height:960px}.timeline-time-axis,.timeline-member-track{background-size:100% 40px}.timeline-event{font-size:9px;padding:3px}.timeline-head-member{font-size:10px}.timeline-day-nav{grid-template-columns:40px 1fr 40px}.timeline-day-nav button{width:38px;height:38px}}
     .belongings-layout{grid-template-columns:minmax(240px,330px) minmax(0,1fr)}.belonging-list{display:grid;gap:9px}.belonging-row{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid var(--line);border-radius:7px;background:#fffefa}.belonging-toggle{display:flex;align-items:center;gap:11px;flex:1;min-width:0;border:0;background:transparent;text-align:left;color:var(--ink);padding:4px}.belonging-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:50%;background:#e8eee6;color:var(--green)}.belonging-icon svg{width:18px}.belonging-name{font-size:14px;font-weight:700;overflow-wrap:anywhere}.belonging-state{font-size:10px;color:#718078;margin-top:3px}.belonging-row.speaking{border-color:#77a28e;background:#f1f7f1}.belonging-row.speaking .belonging-icon{background:var(--green);color:white}.belonging-delete{flex:none;width:34px;height:34px;border:0;border-radius:5px;background:transparent;color:#89938c;font-size:18px}.belonging-delete:hover{background:#f8e9e4;color:#ad5038}.belonging-empty{padding:30px 12px;text-align:center;border:1px dashed #cbd0c8;border-radius:7px;color:#89938c;font-size:12px}
     @media(max-width:760px){.belongings-layout{grid-template-columns:minmax(0,1fr)}}
+    .belonging-select{width:18px;height:18px;flex:none;accent-color:var(--green)}.belonging-content{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left;color:var(--ink)}.belonging-list{margin-top:12px}.belonging-play{margin:0 0 4px}.belonging-play:disabled{opacity:.5;cursor:default}
   </style>
 </head>
 <body>
@@ -75,10 +76,10 @@
     </div>
     </section>
     <section class="app-view" id="page-belongings" hidden>
-      <div class="view-intro"><div class="eyebrow">DON'T FORGET</div><h1>持ち物</h1><p>登録した持ち物を5秒ごとに読み上げます。項目をタップすると読み上げを停止・再開できます。</p></div>
+      <div class="view-intro"><div class="eyebrow">DON'T FORGET</div><h1>持ち物</h1><p>複数の持ち物を選ぶと、リストの上から順に4秒間隔で繰り返し読み上げます。</p></div>
       <div class="social-layout belongings-layout">
         <form class="panel" id="belonging-form"><h2>持ち物を追加</h2><div class="field"><label for="belonging-name">持ち物</label><input id="belonging-name" name="name" maxlength="80" placeholder="例：財布、鍵、社員証" required></div><button class="submit" type="submit">持ち物を登録して読み上げる</button></form>
-        <section class="panel"><div class="list-head"><h2>持ち物リスト</h2><span class="count" id="belonging-count">0 件</span></div><div class="belonging-list" id="belonging-list" aria-live="polite"></div></section>
+        <section class="panel"><div class="list-head"><h2>持ち物リスト</h2><span class="count" id="belonging-count">0 件</span></div><button class="submit belonging-play" id="belonging-play" type="button">選択した持ち物を順番に読み上げる</button><div class="belonging-list" id="belonging-list" aria-live="polite"></div></section>
       </div>
       <p class="demo-notice">読み上げにはブラウザーの音声機能を使います。この画面を開いている間に動作します。端末が消音中の場合は音が聞こえないことがあります。</p>
     </section>
@@ -118,6 +119,8 @@
     let speechTimer = null;
     let speakingBelongingId = null;
     let speechEpoch = 0;
+    let speechQueueRunning = false;
+    let speechQueueIndex = 0;
     let currentUser = null;
     let saveQueue = Promise.resolve();
     function createId() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
@@ -135,8 +138,10 @@
       friends = storedFriends.friends;
       rooms = storedRooms.rooms;
       belongings = storedBelongings.belongings;
+      belongings.forEach(item => { item.selected = Boolean(item.selected); });
       unlockedRooms = {};
       speakingBelongingId = null;
+      speechQueueRunning = false;
     }
     function saveRooms() { return Promise.resolve(); }
     function escapeHtml(value) {
@@ -155,12 +160,25 @@
       speechEpoch += 1;
       clearTimeout(speechTimer);
       speechTimer = null;
+      speechQueueRunning = false;
+      speakingBelongingId = null;
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     }
-    function speakBelonging(item, epoch) {
-      if (epoch !== speechEpoch || speakingBelongingId !== item.id || document.querySelector('#page-belongings').hidden) return;
+    function speakNextBelonging(epoch) {
+      if (epoch !== speechEpoch || !speechQueueRunning || document.querySelector('#page-belongings').hidden) return;
+      const selectedItems = belongings.filter(item => item.selected);
+      if (!selectedItems.length) {
+        stopBelongingSpeech();
+        renderBelongings();
+        showToast('持ち物を選択してください', '読み上げたい持ち物にチェックを入れてください');
+        return;
+      }
+      speechQueueIndex %= selectedItems.length;
+      const item = selectedItems[speechQueueIndex];
+      speakingBelongingId = item.id;
+      renderBelongings();
       if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
-        speakingBelongingId = null;
+        stopBelongingSpeech();
         renderBelongings();
         showToast('音声読み上げに対応していません', 'SafariまたはChromeの最新バージョンをお試しください');
         return;
@@ -168,34 +186,53 @@
       const utterance = new SpeechSynthesisUtterance(item.name);
       utterance.lang = 'ja-JP';
       utterance.onend = () => {
-        if (epoch === speechEpoch && speakingBelongingId === item.id) speechTimer = setTimeout(() => speakBelonging(item, epoch), 5000);
+        if (epoch !== speechEpoch || !speechQueueRunning || speakingBelongingId !== item.id) return;
+        const latestSelected = belongings.filter(candidate => candidate.selected);
+        if (!latestSelected.length) {
+          stopBelongingSpeech();
+          renderBelongings();
+          return;
+        }
+        const currentIndex = latestSelected.findIndex(candidate => candidate.id === item.id);
+        speechQueueIndex = currentIndex < 0 ? speechQueueIndex % Math.max(latestSelected.length, 1) : (currentIndex + 1) % latestSelected.length;
+        speechTimer = setTimeout(() => speakNextBelonging(epoch), 4000);
       };
       utterance.onerror = () => {
         if (epoch === speechEpoch) {
-          speakingBelongingId = null;
+          stopBelongingSpeech();
           renderBelongings();
           showToast('音声を再生できません', '端末の音量とブラウザーの音声設定を確認してください');
         }
       };
       window.speechSynthesis.speak(utterance);
     }
-    function startBelongingSpeech(item) {
+    function startBelongingSpeech() {
+      if (!belongings.some(item => item.selected)) {
+        stopBelongingSpeech();
+        renderBelongings();
+        showToast('持ち物を選択してください', '読み上げたい持ち物にチェックを入れてください');
+        return;
+      }
       stopBelongingSpeech();
-      speakingBelongingId = item.id;
+      speechQueueRunning = true;
+      speechQueueIndex = 0;
       const epoch = speechEpoch;
-      renderBelongings();
-      speakBelonging(item, epoch);
+      speakNextBelonging(epoch);
     }
     function renderBelongings() {
       const list = document.querySelector('#belonging-list');
       document.querySelector('#belonging-count').textContent = `${belongings.length} 件`;
+      const selectedCount = belongings.filter(item => item.selected).length;
+      const playButton = document.querySelector('#belonging-play');
+      playButton.textContent = speechQueueRunning ? '読み上げを停止' : `選択した持ち物を順番に読み上げ (${selectedCount})`;
+      playButton.disabled = !speechQueueRunning && selectedCount === 0;
       if (!belongings.length) {
         list.innerHTML = '<div class="belonging-empty">持ち物はまだありません</div>';
         return;
       }
       list.innerHTML = belongings.map(item => {
         const active = item.id === speakingBelongingId;
-        return `<article class="belonging-row ${active ? 'speaking' : ''}"><button class="belonging-toggle" type="button" data-belonging-toggle="${escapeHtml(item.id)}" aria-pressed="${active}"><span class="belonging-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8h14l1 13H4L5 8Zm3 0a4 4 0 0 1 8 0"/></svg></span><span><span class="belonging-name">${escapeHtml(item.name)}</span><span class="belonging-state">${active ? '読み上げ中 · タップで停止' : '停止中 · タップで読み上げ'}</span></span></button><button class="belonging-delete" type="button" data-belonging-delete="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}を削除" title="削除">×</button></article>`;
+        return `<article class="belonging-row ${active ? 'speaking' : ''}"><input class="belonging-select" type="checkbox" data-belonging-select="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}を読み上げ対象にする" ${item.selected ? 'checked' : ''}><span class="belonging-content"><span class="belonging-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8h14l1 13H4L5 8Zm3 0a4 4 0 0 1 8 0"/></svg></span><span><span class="belonging-name">${escapeHtml(item.name)}</span><span class="belonging-state">${active ? '読み上げ中' : item.selected ? '読み上げ対象' : '未選択'}</span></span></span><button class="belonging-delete" type="button" data-belonging-delete="${escapeHtml(item.id)}" aria-label="${escapeHtml(item.name)}を削除" title="削除">×</button></article>`;
       }).join('');
     }
     function localDateTime(date) {
@@ -390,9 +427,9 @@
       render();
     });
     document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => {
-      if (button.dataset.page !== 'belongings' && speakingBelongingId) {
+      if (button.dataset.page !== 'belongings' && speechQueueRunning) {
         stopBelongingSpeech();
-        speakingBelongingId = null;
+        renderBelongings();
       }
       document.querySelectorAll('[data-page]').forEach(navButton => navButton.classList.toggle('active', navButton === button));
       document.querySelectorAll('.app-view').forEach(view => { view.hidden = view.id !== `page-${button.dataset.page}`; });
@@ -404,35 +441,40 @@
       event.preventDefault();
       const name = document.querySelector('#belonging-name').value.trim();
       if (!name) return;
-      const item = { id: createId(), name };
+      const item = { id: createId(), name, selected: true };
       belongings.push(item);
       await saveBelongings();
       event.target.reset();
-      startBelongingSpeech(item);
+      startBelongingSpeech();
     });
-    document.querySelector('#belonging-list').addEventListener('click', async event => {
-      const toggle = event.target.closest('[data-belonging-toggle]');
-      if (toggle) {
-        const item = belongings.find(candidate => candidate.id === toggle.dataset.belongingToggle);
-        if (!item) return;
-        if (speakingBelongingId === item.id) {
-          stopBelongingSpeech();
-          speakingBelongingId = null;
-          renderBelongings();
-        } else {
-          startBelongingSpeech(item);
-        }
+    document.querySelector('#belonging-play').addEventListener('click', () => {
+      if (speechQueueRunning) {
+        stopBelongingSpeech();
+        renderBelongings();
         return;
       }
+      startBelongingSpeech();
+    });
+    document.querySelector('#belonging-list').addEventListener('change', async event => {
+      const checkbox = event.target.closest('[data-belonging-select]');
+      if (!checkbox) return;
+      const item = belongings.find(candidate => candidate.id === checkbox.dataset.belongingSelect);
+      if (!item) return;
+      item.selected = checkbox.checked;
+      const restartQueue = speechQueueRunning;
+      renderBelongings();
+      await saveBelongings();
+      if (restartQueue) startBelongingSpeech();
+    });
+    document.querySelector('#belonging-list').addEventListener('click', async event => {
       const remove = event.target.closest('[data-belonging-delete]');
       if (!remove) return;
-      if (speakingBelongingId === remove.dataset.belongingDelete) {
-        stopBelongingSpeech();
-        speakingBelongingId = null;
-      }
+      const restartQueue = speechQueueRunning;
+      if (speakingBelongingId === remove.dataset.belongingDelete) stopBelongingSpeech();
       belongings = belongings.filter(item => item.id !== remove.dataset.belongingDelete);
       renderBelongings();
       await saveBelongings();
+      if (restartQueue && belongings.some(item => item.selected)) startBelongingSpeech();
     });
     function renderFriends(results = null) {
       const list = document.querySelector('#friend-list');
