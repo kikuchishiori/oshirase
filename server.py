@@ -50,6 +50,15 @@ def initialize_database():
                 PRIMARY KEY (user_id, friend_id),
                 CHECK (user_id != friend_id)
             );
+            CREATE TABLE IF NOT EXISTS friend_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                CHECK (sender_id != recipient_id)
+            );
             CREATE TABLE IF NOT EXISTS chat_threads (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_a_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -95,8 +104,20 @@ def initialize_database():
                 user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 PRIMARY KEY (room_id, user_id)
             );
+            CREATE TABLE IF NOT EXISTS room_invitations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                inviter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                invitee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                UNIQUE (room_id, invitee_id)
+            );
             CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
             CREATE INDEX IF NOT EXISTS idx_room_members_user ON room_members(user_id);
+            CREATE INDEX IF NOT EXISTS idx_friend_requests_recipient ON friend_requests(recipient_id, status);
+            CREATE INDEX IF NOT EXISTS idx_room_invitations_invitee ON room_invitations(invitee_id, status);
             CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON chat_messages(thread_id, id);
             CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON chat_messages(thread_id, id);
             """
@@ -252,12 +273,22 @@ class AppHandler(SimpleHTTPRequestHandler):
                 return self.send_json(200, {"users": [dict(row) for row in matches]})
             if path.path == "/api/friends":
                 rows = db.execute(
-                    "SELECT users.id, users.username FROM users WHERE users.id != ? AND EXISTS ("
-                    "SELECT 1 FROM friends WHERE (friends.user_id = ? AND friends.friend_id = users.id) "
-                    "OR (friends.friend_id = ? AND friends.user_id = users.id)) ORDER BY users.username",
-                    (user["id"], user["id"], user["id"]),
+                    "SELECT users.id, users.username FROM friends JOIN users ON users.id = friends.friend_id "
+                    "WHERE friends.user_id = ? ORDER BY users.username",
+                    (user["id"],),
                 ).fetchall()
-                return self.send_json(200, {"friends": [dict(row) for row in rows]})
+                incoming = db.execute(
+                    "SELECT friend_requests.id, users.username, friend_requests.created_at FROM friend_requests "
+                    "JOIN users ON users.id = friend_requests.sender_id WHERE friend_requests.recipient_id = ? "
+                    "AND friend_requests.status = 'pending' ORDER BY friend_requests.created_at",
+                    (user["id"],),
+                ).fetchall()
+                outgoing = db.execute(
+                    "SELECT users.username FROM friend_requests JOIN users ON users.id = friend_requests.recipient_id "
+                    "WHERE friend_requests.sender_id = ? AND friend_requests.status = 'pending'",
+                    (user["id"],),
+                ).fetchall()
+                return self.send_json(200, {"friends": [dict(row) for row in rows], "incomingRequests": [dict(row) for row in incoming], "outgoingRequests": [row["username"] for row in outgoing]})
             chat_match = re.fullmatch(r"/api/chats/([A-Za-z0-9_]{3,24})", path.path)
             if chat_match:
                 friend = self.find_friend_for_chat(db, user["id"], chat_match.group(1))
@@ -277,7 +308,8 @@ class AppHandler(SimpleHTTPRequestHandler):
                     "SELECT DISTINCT rooms.id, rooms.name, rooms.start_date, rooms.end_date, users.username AS owner "
                     "FROM rooms JOIN users ON users.id = rooms.owner_id "
                     "LEFT JOIN room_members ON room_members.room_id = rooms.id "
-                    "WHERE rooms.owner_id = ? OR room_members.user_id = ? ORDER BY rooms.created_at DESC",
+                    "WHERE rooms.owner_id = ? OR room_members.user_id = ? "
+                    "ORDER BY rooms.created_at DESC",
                     (user["id"], user["id"]),
                 ).fetchall()
                 result = []
@@ -287,8 +319,20 @@ class AppHandler(SimpleHTTPRequestHandler):
                         "WHERE room_members.room_id = ? ORDER BY users.username",
                         (room["id"],),
                     ).fetchall()
-                    result.append({**dict(room), "start": room["start_date"], "end": room["end_date"], "members": [row["username"] for row in member_rows]})
-                return self.send_json(200, {"rooms": result})
+                    invitation_rows = db.execute(
+                        "SELECT room_invitations.id, room_invitations.status, users.username FROM room_invitations "
+                        "JOIN users ON users.id = room_invitations.invitee_id WHERE room_invitations.room_id = ?",
+                        (room["id"],),
+                    ).fetchall()
+                    result.append({**dict(room), "start": room["start_date"], "end": room["end_date"], "members": [row["username"] for row in member_rows], "invitations": [dict(row) for row in invitation_rows]})
+                incoming_invites = db.execute(
+                    "SELECT room_invitations.id AS invitation_id, rooms.id, rooms.name, rooms.start_date, rooms.end_date, "
+                    "users.username AS inviter FROM room_invitations JOIN rooms ON rooms.id = room_invitations.room_id "
+                    "JOIN users ON users.id = room_invitations.inviter_id WHERE room_invitations.invitee_id = ? "
+                    "AND room_invitations.status = 'pending' ORDER BY room_invitations.created_at DESC",
+                    (user["id"],),
+                ).fetchall()
+                return self.send_json(200, {"rooms": result, "incomingInvitations": [dict(row) for row in incoming_invites]})
         self.send_json(404, {"error": "not_found"})
 
     def do_POST(self):
@@ -350,10 +394,15 @@ class AppHandler(SimpleHTTPRequestHandler):
                     return self.send_json(404, {"error": "user_not_found"})
                 if friend["id"] == user["id"]:
                     return self.send_json(400, {"error": "cannot_add_self"})
-                created_at = int(time.time())
-                db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id, created_at) VALUES (?, ?, ?)", (user["id"], friend["id"], created_at))
-                db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id, created_at) VALUES (?, ?, ?)", (friend["id"], user["id"], created_at))
-                return self.send_json(200, dict(friend))
+                is_friend = db.execute("SELECT 1 FROM friends WHERE user_id = ? AND friend_id = ?", (user["id"], friend["id"])).fetchone()
+                if is_friend:
+                    return self.send_json(409, {"error": "already_friends"})
+                pending = db.execute("SELECT id FROM friend_requests WHERE sender_id = ? AND recipient_id = ? AND status = 'pending' ORDER BY id DESC LIMIT 1", (user["id"], friend["id"])).fetchone()
+                if pending:
+                    return self.send_json(409, {"error": "friend_request_pending"})
+                now = int(time.time())
+                db.execute("INSERT INTO friend_requests (sender_id, recipient_id, status, created_at, updated_at) VALUES (?, ?, 'pending', ?, ?)", (user["id"], friend["id"], now, now))
+                return self.send_json(202, {"username": friend["username"], "status": "pending"})
             chat_match = re.fullmatch(r"/api/chats/([A-Za-z0-9_]{3,24})", path)
             if chat_match:
                 friend = self.find_friend_for_chat(db, user["id"], chat_match.group(1))
@@ -399,7 +448,7 @@ class AppHandler(SimpleHTTPRequestHandler):
                     return self.send_json(400, {"error": "invalid_room_dates"})
                 if end_day < start_day or (end_day - start_day).days > 366:
                     return self.send_json(400, {"error": "invalid_room_dates"})
-                member_ids = [user["id"]]
+                invitee_ids = []
                 for username in usernames:
                     friend = db.execute(
                         "SELECT users.id FROM users JOIN friends ON friends.friend_id = users.id "
@@ -407,8 +456,8 @@ class AppHandler(SimpleHTTPRequestHandler):
                         (user["id"], str(username)),
                     ).fetchone()
                     if not friend:
-                        return self.send_json(400, {"error": "room_member_must_be_friend"})
-                    member_ids.append(friend["id"])
+                        return self.send_json(400, {"error": "room_member_must_be_approved_friend"})
+                    invitee_ids.append(friend["id"])
                 salt = secrets.token_bytes(16)
                 try:
                     db.execute(
@@ -418,8 +467,10 @@ class AppHandler(SimpleHTTPRequestHandler):
                     )
                 except sqlite3.IntegrityError:
                     return self.send_json(409, {"error": "room_id_exists"})
-                db.executemany("INSERT INTO room_members (room_id, user_id) VALUES (?, ?)", [(room_id, member_id) for member_id in set(member_ids)])
-                return self.send_json(201, {"id": room_id, "name": name, "start": start, "end": end, "members": usernames + [user["username"]], "owner": user["username"]})
+                now = int(time.time())
+                db.execute("INSERT INTO room_members (room_id, user_id) VALUES (?, ?)", (room_id, user["id"]))
+                db.executemany("INSERT INTO room_invitations (room_id, inviter_id, invitee_id, status, created_at, updated_at) VALUES (?, ?, ?, 'pending', ?, ?)", [(room_id, user["id"], invitee_id, now, now) for invitee_id in set(invitee_ids)])
+                return self.send_json(201, {"id": room_id, "name": name, "start": start, "end": end, "members": [user["username"]], "owner": user["username"], "invitations": [{"username": username, "status": "pending"} for username in dict.fromkeys(usernames)]})
         self.send_json(404, {"error": "not_found"})
 
     def do_PUT(self):
@@ -465,6 +516,49 @@ class AppHandler(SimpleHTTPRequestHandler):
 
     def do_PATCH(self):
         path = urlparse(self.path).path
+        friend_request_match = re.fullmatch(r"/api/friend-requests/(\d+)", path)
+        room_invitation_match = re.fullmatch(r"/api/room-invitations/(\d+)", path)
+        if friend_request_match or room_invitation_match:
+            try:
+                payload = self.read_json()
+            except (ValueError, json.JSONDecodeError, UnicodeDecodeError):
+                return self.send_json(400, {"error": "invalid_request"})
+            action = payload.get("action")
+            if action not in ("accept", "decline"):
+                return self.send_json(400, {"error": "invalid_action"})
+            with connect() as db:
+                user = self.require_user(db)
+                if user is None:
+                    return
+                now = int(time.time())
+                if friend_request_match:
+                    request = db.execute(
+                        "SELECT sender_id, recipient_id, status FROM friend_requests WHERE id = ?",
+                        (int(friend_request_match.group(1)),),
+                    ).fetchone()
+                    if not request or request["recipient_id"] != user["id"]:
+                        return self.send_json(404, {"error": "request_not_found"})
+                    if request["status"] != "pending":
+                        return self.send_json(409, {"error": "request_already_handled"})
+                    status = "accepted" if action == "accept" else "declined"
+                    db.execute("UPDATE friend_requests SET status = ?, updated_at = ? WHERE id = ?", (status, now, int(friend_request_match.group(1))))
+                    if action == "accept":
+                        db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id, created_at) VALUES (?, ?, ?)", (request["sender_id"], user["id"], now))
+                        db.execute("INSERT OR IGNORE INTO friends (user_id, friend_id, created_at) VALUES (?, ?, ?)", (user["id"], request["sender_id"], now))
+                    return self.send_json(200, {"ok": True, "status": status})
+                invitation = db.execute(
+                    "SELECT room_id, inviter_id, invitee_id, status FROM room_invitations WHERE id = ?",
+                    (int(room_invitation_match.group(1)),),
+                ).fetchone()
+                if not invitation or invitation["invitee_id"] != user["id"]:
+                    return self.send_json(404, {"error": "invitation_not_found"})
+                if invitation["status"] != "pending":
+                    return self.send_json(409, {"error": "invitation_already_handled"})
+                status = "accepted" if action == "accept" else "declined"
+                db.execute("UPDATE room_invitations SET status = ?, updated_at = ? WHERE id = ?", (status, now, int(room_invitation_match.group(1))))
+                if action == "accept":
+                    db.execute("INSERT OR IGNORE INTO room_members (room_id, user_id) VALUES (?, ?)", (invitation["room_id"], user["id"]))
+                return self.send_json(200, {"ok": True, "status": status})
         match = re.fullmatch(r"/api/rooms/([A-Za-z0-9_-]+)/unlock", path)
         if not match:
             return self.send_json(404, {"error": "not_found"})
@@ -498,6 +592,8 @@ class AppHandler(SimpleHTTPRequestHandler):
                 visible = []
                 for item in member_reminders:
                     if item.get("kind") == "entry":
+                        continue
+                    if item.get("share") is not True:
                         continue
                     start_day = item.get("startDay") or item.get("startAt", item.get("at", ""))[:10]
                     end_day = item.get("endDay") or item.get("endAt", item.get("at", ""))[:10]
